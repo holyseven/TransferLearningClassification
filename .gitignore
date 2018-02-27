@@ -1,5 +1,4 @@
-analyse_and*
-z_pretrained_weights/*
+*z_pretrained_weights*/
 run_classification/log/
 *.png
 *.txt
