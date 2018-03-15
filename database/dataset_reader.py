@@ -78,9 +78,9 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             num_classes = 67
             # computed with training data.
             IMG_MEAN = [124.65235427, 110.04237483, 94.99279042]  # RGB
-            data_path = '../create_databases/tfRecords-Indoors/train-*'
+            data_path = '../create_databases/tfRecords-Indoors/Train-*'
             if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Indoors/test-*'
+                data_path = '../create_databases/tfRecords-Indoors/Test-*'
         elif dataset == 'dogs120':
             num_classes = 120
             # computed with training data.
