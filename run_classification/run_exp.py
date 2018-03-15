@@ -5,7 +5,7 @@ import datetime
 import os
 
 import tensorflow as tf
-from database import Dogs120_tf, Caltech256_tf, Indoors67_tf
+from database import dataset_reader
 from model import resnet
 from experiment_manager.utils import LogDir
 
@@ -18,7 +18,7 @@ parser.add_argument('--epsilon', type=float, default=0.00001, help='epsilon in b
 parser.add_argument('--norm_only', type=int, default=0,
                     help='no beta nor gamma in fused_bn (1). Or with beta and gamma(0).')
 parser.add_argument('--data_type', type=int, default=32, help='float32 or float16')
-parser.add_argument('--database', type=str, default='indoors67', help='dogs120, caltech256, indoors67')
+parser.add_argument('--database', type=str, default='dogs120', help='dogs120, caltech256, indoors67')
 parser.add_argument('--color_switch', type=int, default=0, help='color switch or not')
 parser.add_argument('--eval_only', type=int, default=0, help='only do the evaluation (1) or do train and eval (0).')
 
@@ -71,24 +71,12 @@ def train(resume_step=None):
     wd_rate2_ph = tf.placeholder(data_type, shape=())
     lrn_rate_ph = tf.placeholder(data_type, shape=())
 
-    if FLAGS.database == 'dogs120':
-        database_input = Dogs120_tf
-        num_classes = 120
-    elif FLAGS.database == 'caltech256':
-        database_input = Caltech256_tf
-        num_classes = 257
-    elif FLAGS.database == 'indoors67':
-        database_input = Indoors67_tf
-        num_classes = 67
-    else:
-        raise TypeError("Unknown database %s" % FLAGS.database)
-
     with tf.variable_scope(FLAGS.resnet):
-        images, labels = database_input.build_input(FLAGS.server, FLAGS.batch_size, 'train',
-                                                    examples_per_class=FLAGS.examples_per_class,
-                                                    dataset=FLAGS.database,
-                                                    color_switch=FLAGS.color_switch,
-                                                    blur=FLAGS.blur)
+        images, labels, num_classes = dataset_reader.build_input(FLAGS.batch_size, 'train',
+                                                                 examples_per_class=FLAGS.examples_per_class,
+                                                                 dataset=FLAGS.database,
+                                                                 color_switch=FLAGS.color_switch,
+                                                                 blur=FLAGS.blur)
         model = resnet.ResNet(num_classes, lrn_rate_ph, wd_rate_ph, wd_rate2_ph,
                               optimizer=FLAGS.optimizer,
                               mode='train', bn_epsilon=FLAGS.epsilon, resnet=FLAGS.resnet, norm_only=FLAGS.norm_only,
@@ -155,22 +143,22 @@ def train(resume_step=None):
         fine_tune_variables = []
         for v in import_variables:
             if 'logits' in v.name or 'Momentum' in v.name:
-                print '=Finetuning Process: not import %s' % v.name
+                print 'not loading %s' % v.name
                 continue
             fine_tune_variables.append(v)
 
         loader = tf.train.Saver(var_list=fine_tune_variables)
         loader.restore(sess, FLAGS.fine_tune_filename)
-        print('=Succesfully loaded fine-tune model from %s.' % FLAGS.fine_tune_filename)
+        print('Succesfully loaded fine-tune model from %s.' % FLAGS.fine_tune_filename)
     elif resume_step is not None:
         # ./snapshot/model.ckpt-3000
         i_ckpt = logdir.snapshot_dir + '/model.ckpt-%d' % resume_step
         saver.restore(sess, i_ckpt)
 
         step = resume_step
-        print('=Succesfully loaded model from %s at step=%s.' % (i_ckpt, resume_step))
+        print('Succesfully loaded model from %s at step=%s.' % (i_ckpt, resume_step))
     else:
-        print '=Not import any model.'
+        print 'Not import any model.'
 
     print '=========================== training process begins ================================='
     f_log = open(logdir.exp_dir + '/' + str(datetime.datetime.now()) + '.txt', 'w')
@@ -267,21 +255,9 @@ def eval(i_ckpt):
         print 'using tf.float32 ====================='
         data_type = tf.float32
 
-    if FLAGS.database == 'dogs120':
-        database_input = Dogs120_tf
-        num_classes = 120
-    elif FLAGS.database == 'caltech256':
-        database_input = Caltech256_tf
-        num_classes = 257
-    elif FLAGS.database == 'indoors67':
-        database_input = Indoors67_tf
-        num_classes = 67
-    else:
-        raise TypeError("Unknown database %s" % FLAGS.database)
-
     with tf.variable_scope(FLAGS.resnet):
-        images, labels = database_input.build_input(FLAGS.server, FLAGS.test_batch_size, 'val', dataset=FLAGS.database,
-                                                    color_switch=FLAGS.color_switch, blur=0)
+        images, labels, num_classes = dataset_reader.build_input(FLAGS.test_batch_size, 'val', dataset=FLAGS.database,
+                                                    color_switch=FLAGS.color_switch, blur=0, multipcrops=False)
         model = resnet.ResNet(num_classes, None, None, None,
                               mode='eval', bn_epsilon=FLAGS.epsilon, norm_only=FLAGS.norm_only, resnet=FLAGS.resnet,
                               float_type=data_type)
@@ -309,7 +285,7 @@ def eval(i_ckpt):
     average_loss = 0.0
     average_precision = 0.0
     if FLAGS.test_max_iter is None:
-        max_iter = database_input.num_per_epoche('eval') / FLAGS.test_batch_size
+        max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database) / FLAGS.test_batch_size
     else:
         max_iter = FLAGS.test_max_iter
 

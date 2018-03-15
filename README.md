@@ -7,12 +7,18 @@ Steps of reproducing the experiments:
 2. (optional) Verify the pre-trained weights, using `./network_verification/resnet_verification.py`.
 ImageNet validation set is needed.
 
-3. a. Download bin version data files and change the path of databases in `./database/*.py`.
+3. a. Download tfRecords files (coming soon).
 
-   b. Create databases and Re-implement the pre-processing of the inputs.
+   b. Donwload images and create tfRecords files with scripts in `./create_databases`.
 
-4. run the script `./run_classification/train.sh`
+   Stanford Dogs 120: [link](http://vision.stanford.edu/aditya86/ImageNetDogs/).
+   MIT Indoors 67: [link](http://web.mit.edu/torralba/www/indoor.html).
+   Caltech 256: [link](http://www.vision.caltech.edu/Image_Datasets/Caltech256/).
 
-L2-SP should have around 85% classification accuracy while L2 nearly 80%.
-Tested with Tensorflow 1.4.
+   c. Create new databases and add interface in `./database/dataset_reader.py`.
+
+4. run the script `./run_classification/train.sh`.
+
+On the database of Stanford Dogs, L2-SP should have around 85% classification accuracy while L2 nearly 80%.
+Tested with Tensorflow 1.4, Python 2.7.
 

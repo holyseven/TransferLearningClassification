@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../')
-from database import imagenet_tfrecords as database_input
+from database import dataset_reader
 import datetime
 import os
 
@@ -29,11 +29,11 @@ tf.app.flags.DEFINE_string('resnet', 'resnet_v1_101', 'resnet_v1_50, resnet_v1_1
 
 def eval():
     with tf.variable_scope(FLAGS.resnet):
-        images, labels = database_input.build_input(FLAGS.server, FLAGS.test_batch_size, 'val', dataset='imagenet',
-                                                    blur=0,
-                                                    color_switch=FLAGS.color_switch)
+        images, labels, _ = dataset_reader.build_input(FLAGS.test_batch_size, 'val', dataset='imagenet',
+                                                       blur=0,
+                                                       color_switch=FLAGS.color_switch)
         model = resnet.ResNet(FLAGS.num_classes, None, None, None, resnet=FLAGS.resnet, mode=FLAGS.mode,
-                            float_type=tf.float32)
+                              float_type=tf.float32)
         logits = model.inference(images)
         model.compute_loss(labels+FLAGS.labels_offset, logits)
         precisions = tf.nn.in_top_k(tf.cast(model.predictions, tf.float32), labels+FLAGS.labels_offset, FLAGS.top_k)
@@ -81,7 +81,7 @@ def eval():
     average_loss = 0.0
     average_precision = 0.0
     if FLAGS.test_max_iter is None:
-        max_iter = database_input.num_per_epoche('eval') / FLAGS.test_batch_size
+        max_iter = dataset_reader.num_per_epoche('eval', 'imagenet') / FLAGS.test_batch_size
     else:
         max_iter = FLAGS.test_max_iter
 
@@ -89,7 +89,7 @@ def eval():
     while step < max_iter:
         step += 1
         loss, precision = sess.run([
-            tf.constant(0), precision_op
+            model.loss, precision_op
         ])
 
         average_loss += loss
