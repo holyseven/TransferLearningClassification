@@ -21,6 +21,6 @@ After training on other databases, use the finetuned model (for shared variables
 
 4. run the script `./run_classification/train.sh`.
 
-On the database of Stanford Dogs, L2-SP should have around 88~89% classification accuracy while L2 81~82%.
+On the database of Stanford Dogs, L2-SP should have around 88\~89% classification accuracy while L2 81\~82%.
 Tested with Tensorflow 1.4, Python 2.7.
 
