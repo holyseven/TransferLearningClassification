@@ -6,8 +6,10 @@ Steps of reproducing the experiments:
 
 2. (optional) Verify the pre-trained weights, using `./network_verification/resnet_verification.py`.
 ImageNet validation set is needed.
+This can be also used for verifying the lifelong learning setting.
+After training on other databases, use the finetuned model (for shared variables) and the pre-trained model (for the last classifier layer) to do the evaluation on ImageNet.
 
-3. a. Download tfRecords files (coming soon).
+3. a. Download tfRecords files ([link](https://drive.google.com/open?id=1MEn-lgwczFTefrwFytRJ2exQG0BMLbcw)).
 
    b. Donwload images and create tfRecords files with scripts in `./create_databases`.
 
@@ -19,6 +21,6 @@ ImageNet validation set is needed.
 
 4. run the script `./run_classification/train.sh`.
 
-On the database of Stanford Dogs, L2-SP should have around 85% classification accuracy while L2 nearly 80%.
+On the database of Stanford Dogs, L2-SP should have around 88~89% classification accuracy while L2 81~82%.
 Tested with Tensorflow 1.4, Python 2.7.
 

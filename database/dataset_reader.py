@@ -23,6 +23,8 @@ def num_per_epoche(mode, dataset):
 
 
 def multi_crop(img, label, crop_size, image_size, crop_num=10):
+    # it is not a best implementation of multiple crops for testing.
+    # So use single crop for this moment.
     raise NotImplementedError()
     print 'img.shape = ', image_size, '; crop_size:', crop_size
     flipped_image = tf.reverse(img, [1])
@@ -77,14 +79,14 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
         if dataset == 'indoors67':
             num_classes = 67
             # computed with training data.
-            IMG_MEAN = [124.65235427, 110.04237483, 94.99279042]  # RGB
+            IMG_MEAN = [123.55967712, 110.04705048, 93.7353363]  # RGB [124.65235427, 110.04237483, 94.99279042]
             data_path = '../create_databases/tfRecords-Indoors/Train-*'
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Indoors/Test-*'
         elif dataset == 'dogs120':
             num_classes = 120
             # computed with training data.
-            IMG_MEAN = [121.49871251, 115.17340629, 99.73959828]  # RGB
+            IMG_MEAN = [120.40182495, 115.22045135, 98.45511627]  # RGB [121.49871251, 115.17340629, 99.73959828]
             data_path = '../create_databases/tfRecords-Dogs/train-*'
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Dogs/test-*'
@@ -125,18 +127,21 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             label = tf.cast(features['image/class/label'], tf.int32) - 1
         else:
             label = tf.cast(features['image/class/trainid'], tf.int32)
-        height = tf.shape(image)[0]
-        width = tf.shape(image)[1]
 
         image = tf.cast(image, tf.float32)
 
+        # originally, resize to [image_size, image_size]
+        # image = tf.image.resize_images(image, [image_size, image_size])
+
+        # but it is better to keep the scale. L2-SP can have more than 88% precision on Dogs.
+        height = tf.shape(image)[0]
+        width = tf.shape(image)[1]
         height_smaller_than_width = tf.less_equal(height, width)
         new_shorter_edge = tf.constant(image_size)
         new_height, new_width = tf.cond(
             height_smaller_than_width,
             lambda: (new_shorter_edge, width * new_shorter_edge / height),
             lambda: (height * new_shorter_edge / width, new_shorter_edge))
-
         image = tf.image.resize_images(image, [new_height, new_width])
 
         if blur:
@@ -147,7 +152,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
         image -= IMG_MEAN
 
         # rgb (in db) -> bgr, depends on the pre-trained model.
-        # model transferred from caffe model, use bgr; else, use rgb.
+        # if model transferred from caffe model, use bgr; else, use rgb.
         if color_switch:
             img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=image)
             image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
