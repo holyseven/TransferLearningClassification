@@ -68,18 +68,25 @@ class ImageCoder(object):
         self._sess = tf.Session()
 
         # Initializes function that decodes RGB JPEG data.
-        self._decode_jpeg_data = tf.placeholder(dtype=tf.string)
-        self._decode_jpeg = tf.image.decode_jpeg(self._decode_jpeg_data, channels=3)
+        self._input_data = tf.placeholder(dtype=tf.string)
+        self._image_data = tf.image.decode_jpeg(self._input_data, channels=3)
+        self._encoded_data = tf.image.encode_jpeg(self._image_data, format='rgb', quality=100)
 
-    def decode_jpeg(self, image_data):
-        image = self._sess.run(self._decode_jpeg,
-                               feed_dict={self._decode_jpeg_data: image_data})
-        assert len(image.shape) == 3
-        assert image.shape[2] == 3
-        return image
+        self._bmp_data = tf.image.decode_bmp(self._input_data, channels=3)
+        self._bmp_to_jpeg = tf.image.encode_jpeg(self._bmp_data, format='rgb', quality=100)
+
+    def re_encode_jpeg(self, image_data):
+        # since tf1.2, decode_jpeg can decode JPEGs, PNGs and non-animated GIFs; so for compatibility,
+        # re-encoding all of three to jpegs for version < 1.2.
+        return self._sess.run(self._encoded_data,
+                              feed_dict={self._input_data: image_data})
+
+    def bmp_to_jpeg(self, image_data):
+        return self._sess.run(self._bmp_to_jpeg,
+                              feed_dict={self._input_data: image_data})
 
 
-def _process_image(filename):
+def _process_image(filename, coder):
     """Process a single image file.
     Args:
       filename: string, path to an image file e.g., '/path/to/example.JPG'.
@@ -134,7 +141,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames, lab
             filename = filenames[i]
             label = labels[i]
 
-            image_buffer = _process_image(filename)
+            image_buffer = _process_image(filename, coder)
 
             example = _convert_to_example(image_buffer, label)
             writer.write(example.SerializeToString())
@@ -210,6 +217,10 @@ def _find_image_files(data_dir, data_sub):
 
     for i in range(len(file_list)):
         image_filename = str(file_list[i][0][0])
+
+        if '.jpg' not in image_filename:
+            print image_filename
+
         filenames.append(data_dir + '/Images/' + image_filename)
         labels.append(label_list[i] - 1)
 

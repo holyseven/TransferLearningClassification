@@ -120,7 +120,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
 
         features = tf.parse_single_example(serialized_example, features=feature_map)
 
-        image = tf.image.decode_image(features['image/encoded'], channels=3)
+        image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
         if dataset == 'imagenet':
             label = tf.cast(features['image/class/label'], tf.int32) - 1
         else:
