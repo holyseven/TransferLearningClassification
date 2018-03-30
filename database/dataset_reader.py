@@ -25,7 +25,6 @@ def num_per_epoche(mode, dataset):
 def multi_crop(img, label, crop_size, image_size, crop_num=10):
     # it is not a best implementation of multiple crops for testing.
     # So use single crop for this moment.
-    raise NotImplementedError()
     print 'img.shape = ', image_size, '; crop_size:', crop_size
     flipped_image = tf.reverse(img, [1])
     img_shape = [image_size, image_size]
@@ -64,8 +63,8 @@ def simple_central_crop(image, crop_size):
     return image
 
 
-def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=False,
-                resize_image_size=256, crop_size=224, examples_per_class=None, multipcrops=False):
+def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=False, resize_image=True,
+                resize_image_size=256, crop_size=224, examples_per_class=None, multicrops_for_eval=False):
     with tf.device('/cpu:0'):
         image_size = resize_image_size
 
@@ -130,19 +129,20 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
 
         image = tf.cast(image, tf.float32)
 
-        # originally, resize to [image_size, image_size]
-        # image = tf.image.resize_images(image, [image_size, image_size])
-
-        # but it is better to keep the scale. L2-SP can have more than 88% precision on Dogs.
-        height = tf.shape(image)[0]
-        width = tf.shape(image)[1]
-        height_smaller_than_width = tf.less_equal(height, width)
-        new_shorter_edge = tf.constant(image_size)
-        new_height, new_width = tf.cond(
-            height_smaller_than_width,
-            lambda: (new_shorter_edge, width * new_shorter_edge / height),
-            lambda: (height * new_shorter_edge / width, new_shorter_edge))
-        image = tf.image.resize_images(image, [new_height, new_width])
+        if resize_image:
+            # originally, resize to [image_size, image_size]
+            image = tf.image.resize_images(image, [image_size, image_size])
+        else:
+            # but it is better to keep the scale. L2-SP can have more than 88% precision on Dogs.
+            height = tf.shape(image)[0]
+            width = tf.shape(image)[1]
+            height_smaller_than_width = tf.less_equal(height, width)
+            new_shorter_edge = tf.constant(image_size)
+            new_height, new_width = tf.cond(
+                height_smaller_than_width,
+                lambda: (new_shorter_edge, width * new_shorter_edge / height),
+                lambda: (height * new_shorter_edge / width, new_shorter_edge))
+            image = tf.image.resize_images(image, [new_height, new_width])
 
         if blur:
             image = tf.image.random_brightness(image, max_delta=63. / 255.)
@@ -166,7 +166,8 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                                                                 num_threads=num_threads,
                                                                 min_after_dequeue=8 * batch_size)
         else:
-            if multipcrops:
+            if multicrops_for_eval:
+                print 'use multiple crops and the test batch size is not used.'
                 batch_images, batch_labels = multi_crop(image, label, crop_size, image_size)
                 batch_images = tf.convert_to_tensor(batch_images)
                 batch_labels = tf.convert_to_tensor(batch_labels)

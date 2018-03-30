@@ -6,6 +6,17 @@ list_toprint = ['network', 'fine_tune_filename', 'database', 'lrn_rate', 'train_
                 'weight_decay_rate', 'weight_decay_rate2', 'batch_size', 'train_image_size', 'initializer']
 
 
+def sorted_str_dict(dict):
+    res = '{'
+    keys = sorted(dict.keys())
+    for i, k in enumerate(keys):
+        res += '\'' + str(k) + '\': ' + str(dict[k])
+        if i < len(keys) - 1:
+            res += ', '
+    res += '}'
+    return res
+
+
 class LogDir(object):
     def __init__(self, database, log_dir, weight_decay_mode):
         self.log_dir = './log'

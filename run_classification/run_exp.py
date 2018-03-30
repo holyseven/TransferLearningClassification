@@ -7,7 +7,7 @@ import os
 import tensorflow as tf
 from database import dataset_reader
 from model import resnet
-from experiment_manager.utils import LogDir
+from experiment_manager.utils import LogDir, sorted_str_dict
 
 import argparse
 
@@ -21,6 +21,7 @@ parser.add_argument('--data_type', type=int, default=32, help='float32 or float1
 parser.add_argument('--database', type=str, default='dogs120', help='dogs120, caltech256, indoors67')
 parser.add_argument('--color_switch', type=int, default=0, help='color switch or not')
 parser.add_argument('--eval_only', type=int, default=0, help='only do the evaluation (1) or do train and eval (0).')
+parser.add_argument('--resize_image', type=int, default=1, help='whether resizing images for training and testing.')
 
 parser.add_argument('--separate_reg', type=int, default=0, help='separate regularizers for optimizer.')
 parser.add_argument('--batch_size', type=int, default=10, help='batch size')
@@ -52,6 +53,7 @@ parser.add_argument('--fisher_epsilon', type=float, default=0, help='clip value 
 parser.add_argument('--examples_per_class', type=int, default=60, help='examples per class')
 
 parser.add_argument('--test_max_iter', type=int, default=None, help='maximum test iteration')
+parser.add_argument('--test_with_multicrops', type=int, default=0, help='whether using multiple crops for testing.')
 parser.add_argument('--test_batch_size', type=int, default=100, help='batch size used for test or validation')
 FLAGS = parser.parse_args()
 
@@ -75,6 +77,7 @@ def train(resume_step=None):
         images, labels, num_classes = dataset_reader.build_input(FLAGS.batch_size, 'train',
                                                                  examples_per_class=FLAGS.examples_per_class,
                                                                  dataset=FLAGS.database,
+                                                                 resize_image=FLAGS.resize_image,
                                                                  color_switch=FLAGS.color_switch,
                                                                  blur=FLAGS.blur)
         model = resnet.ResNet(num_classes, lrn_rate_ph, wd_rate_ph, wd_rate2_ph,
@@ -163,7 +166,7 @@ def train(resume_step=None):
     print '=========================== training process begins ================================='
     f_log = open(logdir.exp_dir + '/' + str(datetime.datetime.now()) + '.txt', 'w')
     f_log.write('step,loss,precision,wd\n')
-    f_log.write(str(FLAGS.__dict__) + '\n')
+    f_log.write(sorted_str_dict(FLAGS.__dict__) + '\n')
 
     average_loss = 0.0
     average_precision = 0.0
@@ -256,8 +259,13 @@ def eval(i_ckpt):
         data_type = tf.float32
 
     with tf.variable_scope(FLAGS.resnet):
-        images, labels, num_classes = dataset_reader.build_input(FLAGS.test_batch_size, 'val', dataset=FLAGS.database,
-                                                    color_switch=FLAGS.color_switch, blur=0, multipcrops=False)
+        images, labels, num_classes = dataset_reader.build_input(FLAGS.test_batch_size,
+                                                                 'val',
+                                                                 dataset=FLAGS.database,
+                                                                 color_switch=FLAGS.color_switch,
+                                                                 blur=0,
+                                                                 resize_image=FLAGS.resize_image,
+                                                                 multicrops_for_eval=FLAGS.test_with_multicrops)
         model = resnet.ResNet(num_classes, None, None, None,
                               mode='eval', bn_epsilon=FLAGS.epsilon, norm_only=FLAGS.norm_only, resnet=FLAGS.resnet,
                               float_type=data_type)
@@ -266,6 +274,11 @@ def eval(i_ckpt):
 
     precisions = tf.nn.in_top_k(tf.cast(model.predictions, tf.float32), model.labels, 1)
     precision_op = tf.reduce_mean(tf.cast(precisions, tf.float32))
+
+    if FLAGS.test_with_multicrops == 1:
+        precisions = tf.nn.in_top_k([tf.reduce_mean(model.predictions, axis=[0])], [labels[0]], 1)
+        precision_op = tf.cast(precisions, tf.float32)
+
     # ========================= end of building model ================================
 
     gpu_options = tf.GPUOptions(allow_growth=False)
@@ -289,6 +302,9 @@ def eval(i_ckpt):
     else:
         max_iter = FLAGS.test_max_iter
 
+    if FLAGS.test_with_multicrops == 1:
+        max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database)
+
     step = 0
     while step < max_iter:
         step += 1
@@ -311,7 +327,7 @@ def main(_):
     # ============================================================================
     # ============================= TRAIN ========================================
     # ============================================================================
-    print FLAGS.__dict__
+    print sorted_str_dict(FLAGS.__dict__)
     if FLAGS.resume_step is not None:
         print 'Ready to resume from step %d.' % FLAGS.resume_step
 
@@ -322,7 +338,7 @@ def main(_):
         logdir.print_all_info()
         f_log = open(logdir.exp_dir + '/' + str(datetime.datetime.now()) + '.txt', 'w')
         f_log.write('step,loss,precision,wd\n')
-        f_log.write(str(FLAGS.__dict__) + '\n')
+        f_log.write(sorted_str_dict(FLAGS.__dict__) + '\n')
     else:
         f_log, logdir = train(FLAGS.resume_step)
 
