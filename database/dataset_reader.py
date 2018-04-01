@@ -149,13 +149,13 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
             image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
 
+        image -= IMG_MEAN
+
         # rgb (in db) -> bgr, depends on the pre-trained model.
         # if model transferred from caffe model, use bgr; else, use rgb.
         if color_switch:
             img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=image)
             image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
-
-        image -= IMG_MEAN
 
         if mode == 'train':
             image = tf.image.random_flip_left_right(image)
