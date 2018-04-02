@@ -22,6 +22,10 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             data_path = '../create_databases/tfRecords-Dogs/train-*'
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Dogs/test-*'
+        elif dataset == 'foods101':
+            data_path = '../create_databases/tfRecords-Foods/train-*'
+            if 'val' in mode or 'test' in mode:
+                data_path = '../create_databases/tfRecords-Foods/test-*'
         elif dataset == 'imagenet':
             data_path = '../create_databases/tfRecords-ImageNet/train-*'
             if 'val' in mode:
@@ -84,4 +88,4 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
 if __name__ == '__main__':
     # estimated_mean(dataset='dogs120')
-    estimated_mean(dataset='indoors67')
+    estimated_mean(dataset='foods101')

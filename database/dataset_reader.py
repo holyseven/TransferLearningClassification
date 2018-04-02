@@ -13,6 +13,11 @@ def num_per_epoche(mode, dataset):
             return 12000
         else:
             return 8580
+    elif dataset == 'foods101':
+        if mode == 'train':
+            return 75750
+        else:
+            return 25250
     elif dataset == 'imagenet':
         if mode == 'train':
             return 1281167
@@ -89,6 +94,13 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             data_path = '../create_databases/tfRecords-Dogs/train-*'
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Dogs/test-*'
+        elif dataset == 'foods101':
+            num_classes = 101
+            # computed with training data.
+            IMG_MEAN = [137.87016502, 113.09658086, 86.3819538]  # RGB [137.87016502, 113.09658086, 86.3819538]
+            data_path = '../create_databases/tfRecords-Foods/train-*'
+            if 'val' in mode or 'test' in mode:
+                data_path = '../create_databases/tfRecords-Foods/test-*'
         elif dataset == 'imagenet':
             num_classes = 1000
             IMG_MEAN = [123.68, 116.779, 103.939]  # RGB
@@ -133,7 +145,8 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             # originally, resize to [image_size, image_size]
             image = tf.image.resize_images(image, [image_size, image_size])
         else:
-            # but it is better to keep the scale. L2-SP can have more than 88% precision on Dogs.
+            # but it is better to keep the scale.
+            # L2-SP can have more than 88% precision on Dogs, with a pre-trained resnet-101 model.
             height = tf.shape(image)[0]
             width = tf.shape(image)[1]
             height_smaller_than_width = tf.less_equal(height, width)
@@ -149,6 +162,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
             image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
 
+        # image is an RGB image. So subtract an RGB value.
         image -= IMG_MEAN
 
         # rgb (in db) -> bgr, depends on the pre-trained model.
