@@ -26,6 +26,12 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             data_path = '../create_databases/tfRecords-Foods/train-*'
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Foods/test-*'
+        elif dataset == 'caltech256':
+            data_path = '../create_databases/tfRecords-Caltech/train-006-*'
+            if 'test' in mode:
+                data_path = '../create_databases/tfRecords-Foods/test-*'
+            if 'rest' in mode:
+                data_path = '../create_databases/tfRecords-Foods/rest-*'
         elif dataset == 'imagenet':
             data_path = '../create_databases/tfRecords-ImageNet/train-*'
             if 'val' in mode:
@@ -56,16 +62,17 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
         image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
         image = tf.cast(image, tf.float32)
+        label = tf.cast(features['image/class/trainid'], tf.int32)
 
-        height = tf.shape(image)[0]
-        width = tf.shape(image)[1]
-        height_smaller_than_width = tf.less_equal(height, width)
-        new_shorter_edge = tf.constant(image_size)
-        new_height, new_width = tf.cond(
-            height_smaller_than_width,
-            lambda: (new_shorter_edge, width * new_shorter_edge / height),
-            lambda: (height * new_shorter_edge / width, new_shorter_edge))
-        image = tf.image.resize_images(image, [new_height, new_width])
+        # height = tf.shape(image)[0]
+        # width = tf.shape(image)[1]
+        # height_smaller_than_width = tf.less_equal(height, width)
+        # new_shorter_edge = tf.constant(image_size)
+        # new_height, new_width = tf.cond(
+        #     height_smaller_than_width,
+        #     lambda: (new_shorter_edge, width * new_shorter_edge / height),
+        #     lambda: (height * new_shorter_edge / width, new_shorter_edge))
+        # image = tf.image.resize_images(image, [new_height, new_width])
 
         config = tf.ConfigProto(log_device_placement=False)
         sess = tf.Session(config=config)
@@ -74,18 +81,22 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
         step = 0
         import database.dataset_reader
-        max_iter = database.dataset_reader.num_per_epoche(mode, dataset)
+        max_iter = database.dataset_reader.num_per_epoche(mode, dataset) / 12
         mean = np.zeros([3], np.float32)
-        while step < max_iter + 1:
-            [img_numpy] = sess.run([image])
-            mean += np.mean(img_numpy, axis=(0, 1))
-            print step, mean
+        list_labels = []
+        while step < max_iter:
+            [l] = sess.run([label])
+            # print step, l, list_labels
+            list_labels.append(l[0])
             step += 1
-        print mean/max_iter
+        for i in range(257):
+            if list_labels.count(i) != 5:
+                print i, list_labels.count(i)
+
         coord.request_stop()
         coord.join(threads)
 
 
 if __name__ == '__main__':
     # estimated_mean(dataset='dogs120')
-    estimated_mean(dataset='foods101')
+    estimated_mean(dataset='caltech256')
