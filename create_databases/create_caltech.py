@@ -86,7 +86,7 @@ def all_files_beyond_80(image_dir):
 
         for j in index:
             img_j_str = '%04d'%j
-            filename = image_dir + map_lable_to_name[i] + '/' + index_str + '_' + img_j_str + '.jpg'
+            filename = image_dir + '/' + map_lable_to_name[i] + '/' + index_str + '_' + img_j_str + '.jpg'
             if os.path.isfile(filename) is False:
                 break
             filenames.append(filename)
@@ -331,9 +331,9 @@ def main(unused_argv):
         os.mkdir(FLAGS.output_directory)
 
     # Run it!
-    _process_dataset('train', '/home/jacques/workspace/database/Caltech256/256_ObjectCategories', FLAGS.train_shards)
+    # _process_dataset('train', '/home/jacques/workspace/database/Caltech256/256_ObjectCategories', FLAGS.train_shards)
     # _process_dataset('test', '/home/jacques/workspace/database/Caltech256/256_ObjectCategories', FLAGS.test_shards)
-    # _process_dataset('rest', '/home/jacques/workspace/database/Caltech256/256_ObjectCategories', FLAGS.rest_shards)
+    _process_dataset('rest', '/home/jacques/workspace/database/Caltech256/256_ObjectCategories', FLAGS.rest_shards)
 
 
 if __name__ == '__main__':

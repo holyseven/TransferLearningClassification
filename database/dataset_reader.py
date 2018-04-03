@@ -23,6 +23,8 @@ def num_per_epoche(mode, dataset):
             return 15420
         elif mode == 'test':
             return 5140
+        else:  # rest
+            return 10047
     elif dataset == 'imagenet':
         if mode == 'train':
             return 1281167
