@@ -36,7 +36,6 @@ def num_per_epoche(mode, dataset):
 
 def multi_crop(img, label, crop_size, image_size, crop_num=10):
     # it is not a best implementation of multiple crops for testing.
-    # So use single crop for this moment.
     print 'img.shape = ', image_size, '; crop_size:', crop_size
     flipped_image = tf.reverse(img, [1])
     img_shape = [image_size, image_size]
@@ -199,6 +198,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                 batch_images, batch_labels = multi_crop(image, label, crop_size, image_size)
                 batch_images = tf.convert_to_tensor(batch_images)
                 batch_labels = tf.convert_to_tensor(batch_labels)
+                batch_size = batch_images.get_shape()[0]
             else:
                 image = simple_central_crop(image, [crop_size, crop_size])
                 num_threads = 4
