@@ -29,9 +29,13 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
         elif dataset == 'caltech256':
             data_path = '../create_databases/tfRecords-Caltech/train-*'
             if 'test' in mode:
-                data_path = '../create_databases/tfRecords-Foods/test-*'
+                data_path = '../create_databases/tfRecords-Caltech/test-*'
             if 'rest' in mode:
-                data_path = '../create_databases/tfRecords-Foods/rest-*'
+                data_path = '../create_databases/tfRecords-Caltech/rest-*'
+        elif dataset == 'places365':
+            data_path = '../create_databases/tfRecords-Places/train*'
+            if 'val' in mode:
+                data_path = '../create_databases/tfRecords-Places/val*'
         elif dataset == 'imagenet':
             data_path = '../create_databases/tfRecords-ImageNet/train-*'
             if 'val' in mode:
@@ -94,4 +98,4 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
 if __name__ == '__main__':
     # estimated_mean(dataset='dogs120')
-    estimated_mean(dataset='caltech256')
+    estimated_mean(dataset='places365', mode='val')

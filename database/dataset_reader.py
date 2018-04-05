@@ -25,6 +25,11 @@ def num_per_epoche(mode, dataset):
             return 5140
         else:  # rest
             return 10047
+    elif dataset == 'places365':
+        if mode == 'train':
+            return 1803460
+        else:
+            return 36500
     elif dataset == 'imagenet':
         if mode == 'train':
             return 1281167
@@ -114,6 +119,12 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             data_path = '../create_databases/tfRecords-Foods/train-*'
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Foods/test-*'
+        elif dataset == 'places365':
+            num_classes = 365
+            IMG_MEAN = [115.59942627, 112.52274323, 102.81996155]  # RGB
+            data_path = '../create_databases/tfRecords-Places/train*'
+            if 'val' in mode:
+                data_path = '../create_databases/tfRecords-Places/val*'
         elif dataset == 'imagenet':
             num_classes = 1000
             IMG_MEAN = [123.68, 116.779, 103.939]  # RGB
