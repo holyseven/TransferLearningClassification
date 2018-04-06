@@ -18,7 +18,7 @@ parser.add_argument('--epsilon', type=float, default=0.00001, help='epsilon in b
 parser.add_argument('--norm_only', type=int, default=0,
                     help='no beta nor gamma in fused_bn (1). Or with beta and gamma(0).')
 parser.add_argument('--data_type', type=int, default=32, help='float32 or float16')
-parser.add_argument('--database', type=str, default='foods101', help='dogs120, indoors67, foods101')
+parser.add_argument('--database', type=str, default='caltech256', help='dogs120, indoors67, foods101, caltech256')
 parser.add_argument('--color_switch', type=int, default=0, help='color switch or not')
 parser.add_argument('--eval_only', type=int, default=0, help='only do the evaluation (1) or do train and eval (0).')
 parser.add_argument('--resize_image', type=int, default=1, help='whether resizing images for training and testing.')

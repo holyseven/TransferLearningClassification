@@ -147,6 +147,9 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             raise ValueError('Not supported dataset %s', dataset)
 
         data_files = glob.glob(data_path)
+        if dataset == 'caltech256':
+            num_files = int(examples_per_class / 5)
+            data_files = sorted(data_files)[0:num_files]
         print data_files
 
         file_queue = tf.train.string_input_producer(data_files, shuffle=(mode == 'train'))
