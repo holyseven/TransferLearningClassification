@@ -20,11 +20,9 @@ def num_per_epoche(mode, dataset):
             return 25250
     elif dataset == 'caltech256':
         if mode == 'train':
-            return 15420
-        elif mode == 'test':
-            return 5140
-        else:  # rest
-            return 10047
+            return 15420  # 60*257 = 15420
+        else:  # rest: 10047, train: 60*257, test: 20 *257
+            return 10047 + 5140
     elif dataset == 'places365':
         if mode == 'train':
             return 1803460
