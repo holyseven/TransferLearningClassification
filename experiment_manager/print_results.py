@@ -2,7 +2,7 @@ import utils
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument('--exp', type=str, default='run_segmentation', help='run_classification or run_segmentation')
+parser.add_argument('--exp', type=str, default='run_classification', help='run_classification or run_segmentation')
 FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
