@@ -10,7 +10,7 @@ def sorted_str_dict(dict):
     res = '{'
     keys = sorted(dict.keys())
     for i, k in enumerate(keys):
-        if type(dict[k]) == 'str':
+        if type(dict[k]) == str:
             res += '\'' + str(k) + '\': ' + '\'' + str(dict[k]) + '\''
         else:
             res += '\'' + str(k) + '\': ' + str(dict[k])
