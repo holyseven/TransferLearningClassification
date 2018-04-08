@@ -54,6 +54,7 @@ parser.add_argument('--examples_per_class', type=int, default=60, help='examples
 
 parser.add_argument('--test_max_iter', type=int, default=None, help='maximum test iteration')
 parser.add_argument('--test_with_multicrops', type=int, default=0, help='whether using multiple crops for testing.')
+parser.add_argument('--test_crop_size', type=int, default=224, help='crop image size for test.')
 parser.add_argument('--test_batch_size', type=int, default=100, help='batch size used for test or validation')
 FLAGS = parser.parse_args()
 
@@ -261,6 +262,7 @@ def eval(i_ckpt):
     with tf.variable_scope(FLAGS.resnet):
         images, labels, num_classes = dataset_reader.build_input(FLAGS.test_batch_size,
                                                                  'val',
+                                                                 crop_size=FLAGS.test_crop_size,
                                                                  dataset=FLAGS.database,
                                                                  color_switch=FLAGS.color_switch,
                                                                  blur=0,
