@@ -22,7 +22,7 @@ def num_per_epoche(mode, dataset):
         if mode == 'train':
             return 15420  # 60*257 = 15420
         else:  # rest: 10047, train: 60*257, test: 20 *257
-            return 10047 + 5140
+            return 5140
     elif dataset == 'places365':
         if mode == 'train':
             return 1803460
@@ -109,7 +109,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             IMG_MEAN = [140.48295593, 135.94039917, 127.60546112]  # RGB [140.48295593, 135.94039917, 127.60546112]
             data_path = '../create_databases/tfRecords-Caltech/train-*'
             if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Caltech/*est-*'  # test and rest.
+                data_path = '../create_databases/tfRecords-Caltech/test-*'  # test and rest.
         elif dataset == 'foods101':
             num_classes = 101
             # computed with training data.
