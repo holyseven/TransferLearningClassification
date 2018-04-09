@@ -93,7 +93,7 @@ class ExpLog(object):
     def print_some(self, list_toprint, filters):
         if filters is not None:
             for e in filters:
-                if e not in self.hyperp_dict:
+                if filters[e] != self.hyperp_dict[e]:
                     return
 
         for e in list_toprint:
