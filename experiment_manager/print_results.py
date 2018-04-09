@@ -7,4 +7,6 @@ FLAGS = parser.parse_args()
 
 if __name__ == '__main__':
     logreader = utils.LogReader('../' + FLAGS.exp + '/log')
-    logreader.print_necessary_logs(utils.list_toprint, ['network'])
+    filter_dict = {'database': 'caltech256'}
+    # filter_dict = {'weight_decay_mode': 1}
+    logreader.print_necessary_logs(utils.list_toprint, filter_dict)

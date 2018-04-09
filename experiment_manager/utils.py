@@ -2,7 +2,7 @@ import os
 import glob
 import ast
 
-list_toprint = ['network', 'fine_tune_filename', 'database', 'lrn_rate', 'train_max_iter', 'weight_decay_mode',
+list_toprint = ['network', 'fine_tune_filename', 'database', 'examples_per_class', 'lrn_rate', 'train_max_iter', 'weight_decay_mode',
                 'weight_decay_rate', 'weight_decay_rate2', 'batch_size', 'train_image_size', 'initializer']
 
 
