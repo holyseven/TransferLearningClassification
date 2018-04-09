@@ -1,6 +1,7 @@
 import tensorflow as tf
 import glob
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
@@ -12,6 +13,8 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
                                                 default_value=''),
             'image/class/trainid': tf.FixedLenFeature([1], dtype=tf.int64,
                                                       default_value=-1),
+            'image/filename': tf.FixedLenFeature([], dtype=tf.string,
+                                                default_value='')
         }
 
         if dataset == 'indoors67':
@@ -64,8 +67,10 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
         _, serialized_example = reader.read(file_queue)
         features = tf.parse_single_example(serialized_example, features=feature_map)
 
+        filename = features['image/filename']
         image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
         image = tf.cast(image, tf.float32)
+        label = tf.cast(features['image/class/trainid'], tf.int32)
 
         # height = tf.shape(image)[0]
         # width = tf.shape(image)[1]
@@ -87,9 +92,15 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
         max_iter = database.dataset_reader.num_per_epoche(mode, dataset)
         mean = np.zeros([3], np.float32)
         while step < max_iter + 1:
-            [img_numpy] = sess.run([image])
+            [img_numpy, l, f] = sess.run([image, label, filename])
+
+            # if step % 50 == 0:
+            #     print step, l
+            #     plt.imshow(np.uint8(img_numpy))
+            #     plt.show()
+
             mean += np.mean(img_numpy, axis=(0, 1))
-            print step, mean
+            print step, mean, f
             step += 1
         print mean/max_iter
         coord.request_stop()
@@ -98,4 +109,4 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
 if __name__ == '__main__':
     # estimated_mean(dataset='dogs120')
-    estimated_mean(dataset='places365', mode='val')
+    estimated_mean(dataset='dogs120', mode='train')

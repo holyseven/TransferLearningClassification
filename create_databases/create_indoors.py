@@ -12,7 +12,7 @@ tf.app.flags.DEFINE_integer('train_shards', 12,
                             'Number of shards in training TFRecord files.')
 tf.app.flags.DEFINE_integer('test_shards', 4,
                             'Number of shards in test TFRecord files.')
-tf.app.flags.DEFINE_string('output_directory', './tfRecords-Indoors/',
+tf.app.flags.DEFINE_string('output_directory', './tfRecords-Indoors-2/',
                            'Output data directory')
 tf.app.flags.DEFINE_integer('num_threads', 4,
                             'Number of threads to preprocess the images.')
@@ -39,7 +39,7 @@ def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
 
 
-def _convert_to_example(image_buffer, trainid):
+def _convert_to_example(image_buffer, trainid, filename):
     """Build an Example proto for an example.
     Args:
       filename: string, path to an image file, e.g., '/path/to/example.JPG'
@@ -58,14 +58,43 @@ def _convert_to_example(image_buffer, trainid):
 
     example = tf.train.Example(features=tf.train.Features(feature={
         'image/class/trainid': _int64_feature(trainid),
-        'image/encoded': _bytes_feature(image_buffer)}))
+        'image/encoded': _bytes_feature(image_buffer),
+        'image/filename': _bytes_feature(filename)
+    }))
     return example
 
 
-def _is_bmp(filename):
+def _is2convert(filename):
     blacklist = ['laundromat/Laundry_Room.bmp',
                  'waitingroom/Bistro_3.BMP',
-                 'kindergarden/classroom_north.bmp']
+                 'kindergarden/classroom_north.bmp',
+                 'gym/Gym1.png',
+                 'winecellar/wine_cellar_floor_stone.gif',
+                 'laundromat/Laundry_Room.bmp',
+                 'computerroom/url.gif',
+                 'poolinside/indooPool_Inside.gif',
+                 'library/scotland_library2.png',
+                 'fastfood_restaurant/panther_grill.gif',
+                 'closet/closet_design_lg.gif',
+                 'waitingroom/Bistro_3.BMP',
+                 'gym/Gym2.png',
+                 'nursery/idkidsc0301.png',
+                 'kindergarden/classroom_north.bmp',
+                 'fastfood_restaurant/subway.gif',
+                 'garage/salmon_garage_after.gif',
+                 'waitingroom/deco5.png',
+                 'shoeshop/marky.png',
+                 'buffet/Buffet_Lettuce.gif',
+                 'fastfood_restaurant/melvados.gif',
+                 'computerroom/aula_informatica.gif',
+                 'buffet/Buffet_Set_Up.gif',
+                 'meeting_room/conferencerm2.gif',
+                 'kindergarden/ClassroomLarge.gif',
+                 'fastfood_restaurant/connies.gif',
+                 'greenhouse/1412_mb_file_0a8c5.gif',
+                 'buffet/Buffet_Set_Up_2.gif',
+                 'casino/casino_0338.jpg',
+                 'casino_0336.jpg']
     return filename.split('Images/')[-1] in blacklist
 
 
@@ -75,22 +104,16 @@ class ImageCoder(object):
         self._sess = tf.Session()
 
         # Initializes function that decodes RGB JPEG data.
-        self._input_data = tf.placeholder(dtype=tf.string)
-        self._image_data = tf.image.decode_jpeg(self._input_data, channels=3)
+        self._raw_data = tf.placeholder(dtype=tf.string)
+        self._image_data = tf.image.decode_image(self._raw_data, channels=3)
+        self._image_data = tf.squeeze(self._image_data)  # gif will be [1, height, width, channels]
         self._encoded_data = tf.image.encode_jpeg(self._image_data, format='rgb', quality=100)
 
-        self._bmp_data = tf.image.decode_bmp(self._input_data, channels=3)
-        self._bmp_to_jpeg = tf.image.encode_jpeg(self._bmp_data, format='rgb', quality=100)
-
     def re_encode_jpeg(self, image_data):
-        # since tf1.2, decode_jpeg can decode JPEGs, PNGs and non-animated GIFs; so for compatibility,
+        # since tf1.2, decode_jpeg can decode JPEGs, PNGs, BMPs and non-animated GIFs; so for compatibility,
         # re-encoding all of three to jpegs for version < 1.2.
         return self._sess.run(self._encoded_data,
-                              feed_dict={self._input_data: image_data})
-
-    def bmp_to_jpeg(self, image_data):
-        return self._sess.run(self._bmp_to_jpeg,
-                              feed_dict={self._input_data: image_data})
+                              feed_dict={self._raw_data: image_data})
 
 
 def _process_image(filename, coder):
@@ -107,9 +130,9 @@ def _process_image(filename, coder):
     with tf.gfile.FastGFile(filename, 'r') as f:
         image_data = f.read()
 
-    if _is_bmp(filename):
-        print 'Converting BMP to JPEG for %s' % filename
-        image_data = coder.bmp_to_jpeg(image_data)
+    if _is2convert(filename):
+        print 'Reencoding to JPEG for %s' % filename
+        image_data = coder.re_encode_jpeg(image_data)
 
     return image_data
 
@@ -154,7 +177,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames, lab
 
             image_buffer = _process_image(filename, coder)
 
-            example = _convert_to_example(image_buffer, label)
+            example = _convert_to_example(image_buffer, label, filename)
             writer.write(example.SerializeToString())
             shard_counter += 1
             counter += 1
