@@ -2,7 +2,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import utils
+import sys
+sys.path.append('../')
+from experiment_manager import utils
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--exp', type=str, default='run_classification', help='run_classification or run_segmentation')
