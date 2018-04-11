@@ -109,7 +109,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             IMG_MEAN = [140.48295593, 135.94039917, 127.60546112]  # RGB [140.48295593, 135.94039917, 127.60546112]
             data_path = '../create_databases/tfRecords-Caltech/train-*'
             if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Caltech/test-*'  # test and rest.
+                data_path = '../create_databases/tfRecords-Caltech/test-*'  # test.
         elif dataset == 'foods101':
             num_classes = 101
             # computed with training data.
@@ -155,16 +155,14 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
         # Define a reader and read the next record
         reader = tf.TFRecordReader()
         _, serialized_example = reader.read(file_queue)
-
         features = tf.parse_single_example(serialized_example, features=feature_map)
-
         image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
+        image = tf.cast(image, tf.float32)
+
         if dataset == 'imagenet':
             label = tf.cast(features['image/class/label'], tf.int32) - 1
         else:
             label = tf.cast(features['image/class/trainid'], tf.int32)
-
-        image = tf.cast(image, tf.float32)
 
         if resize_image:
             # originally, resize to [image_size, image_size]
@@ -190,8 +188,8 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
         # image is an RGB image. So subtract an RGB value.
         image -= IMG_MEAN
 
-        # rgb (in db) -> bgr, depends on the pre-trained model.
-        # if model transferred from caffe model, use bgr; else, use rgb.
+        # color_switch: rgb (in db) -> bgr, depends on the pre-trained model.
+        # if model is transferred from caffe model, use bgr; else, use rgb.
         if color_switch:
             img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=image)
             image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)

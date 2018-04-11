@@ -30,7 +30,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Foods/test-*'
         elif dataset == 'caltech256':
-            data_path = '../create_databases/tfRecords-Caltech/train-*'
+            data_path = '../create_databases/tfRecords-Caltech/train-000*'
             if 'test' in mode:
                 data_path = '../create_databases/tfRecords-Caltech/test-*'
             if 'rest' in mode:
@@ -68,7 +68,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
         features = tf.parse_single_example(serialized_example, features=feature_map)
 
         filename = features['image/filename']
-        image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
+        image = tf.image.decode_jpeg(features['image/encoded'])
         image = tf.cast(image, tf.float32)
         label = tf.cast(features['image/class/trainid'], tf.int32)
 
@@ -92,7 +92,15 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
         max_iter = database.dataset_reader.num_per_epoche(mode, dataset)
         mean = np.zeros([3], np.float32)
         while step < max_iter + 1:
+            #if step == 439:
+            #    [img_numpy, l, f] = sess.run([features['image/encoded'], label, filename])
+            #    print step, f
+            #    step += 1
+            #    continue
+
             [img_numpy, l, f] = sess.run([image, label, filename])
+            if img_numpy.shape[-1] == 1:
+                print '\'' + f.split('256_ObjectCategories/')[-1] + '\','
 
             # if step % 50 == 0:
             #     print step, l
@@ -100,7 +108,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             #     plt.show()
 
             mean += np.mean(img_numpy, axis=(0, 1))
-            print step, mean, f
+            print l
             step += 1
         print mean/max_iter
         coord.request_stop()
@@ -109,4 +117,4 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
 if __name__ == '__main__':
     # estimated_mean(dataset='dogs120')
-    estimated_mean(dataset='dogs120', mode='train')
+    estimated_mean(dataset='caltech256', mode='train')

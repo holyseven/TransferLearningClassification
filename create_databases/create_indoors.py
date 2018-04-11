@@ -94,7 +94,7 @@ def _is2convert(filename):
                  'greenhouse/1412_mb_file_0a8c5.gif',
                  'buffet/Buffet_Set_Up_2.gif',
                  'casino/casino_0338.jpg',
-                 'casino_0336.jpg']
+                 'casino/casino_0336.jpg']
     return filename.split('Images/')[-1] in blacklist
 
 
@@ -307,7 +307,7 @@ def main(unused_argv):
     dir_name = '/home/jacques/workspace/database/MIT_Indoors_67/'
 
     # Run it!
-    _process_dataset('Train', dir_name, FLAGS.train_shards)
+    #_process_dataset('Train', dir_name, FLAGS.train_shards)
     _process_dataset('Test', dir_name, FLAGS.test_shards)
 
 
