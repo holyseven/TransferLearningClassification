@@ -22,17 +22,17 @@ parser.add_argument('--epsilon', type=float, default=0.00001, help='epsilon in b
 parser.add_argument('--norm_only', type=int, default=0,
                     help='no beta nor gamma in fused_bn (1). Or with beta and gamma(0).')
 parser.add_argument('--data_type', type=int, default=32, help='float32 or float16')
-parser.add_argument('--database', type=str, default='dogs120', help='dogs120, indoors67, foods101, caltech256')
+parser.add_argument('--database', type=str, default='caltech256', help='dogs120, indoors67, foods101, caltech256')
 parser.add_argument('--color_switch', type=int, default=0, help='color switch or not')
-parser.add_argument('--eval_only', type=int, default=1, help='only do the evaluation (1) or do train and eval (0).')
+parser.add_argument('--eval_only', type=int, default=0, help='only do the evaluation (1) or do train and eval (0).')
 parser.add_argument('--resize_image', type=int, default=1, help='whether resizing images for training and testing.')
 
 parser.add_argument('--separate_reg', type=int, default=0, help='separate regularizers for optimizer.')
 parser.add_argument('--batch_size', type=int, default=10, help='batch size')
 parser.add_argument('--optimizer', type=str, default='mom', help='mom, sgd, more to be added')
-parser.add_argument('--log_dir', type=str, default='1', help='according to gpu index and wd method')
+parser.add_argument('--log_dir', type=str, default='0', help='according to gpu index and wd method')
 parser.add_argument('--lrn_rate', type=float, default=0.01, help='initial learning rate')
-parser.add_argument('--weight_decay_mode', type=int, default=0, help='weight decay mode')
+parser.add_argument('--weight_decay_mode', type=int, default=1, help='weight decay mode')
 parser.add_argument('--weight_decay_rate', type=float, default=0.01, help='weight decay rate for existing layers')
 parser.add_argument('--weight_decay_rate2', type=float, default=0.01, help='weight decay rate for new layers')
 parser.add_argument('--train_max_iter', type=int, default=9000, help='Maximum training iteration')
@@ -57,9 +57,9 @@ parser.add_argument('--fisher_epsilon', type=float, default=0, help='clip value 
 parser.add_argument('--examples_per_class', type=int, default=60, help='examples per class')
 
 parser.add_argument('--test_max_iter', type=int, default=None, help='maximum test iteration')
-parser.add_argument('--test_with_multicrops', type=int, default=1, help='whether using multiple crops for testing.')
+parser.add_argument('--test_with_multicrops', type=int, default=0, help='whether using multiple crops for testing.')
 parser.add_argument('--test_crop_size', type=int, default=224, help='crop image size for test.')
-parser.add_argument('--test_batch_size', type=int, default=110, help='batch size used for test or validation')
+parser.add_argument('--test_batch_size', type=int, default=100, help='batch size used for test or validation')
 FLAGS = parser.parse_args()
 
 
