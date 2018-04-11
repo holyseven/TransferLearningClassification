@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import tensorflow as tf
 import glob
 
@@ -12,7 +16,7 @@ def num_per_epoche(mode, dataset):
         if mode == 'train':
             return 12000
         else:
-            return 8580
+            return 8580  # 2*2*3*5*11*13
     elif dataset == 'foods101':
         if mode == 'train':
             return 75750
@@ -39,7 +43,7 @@ def num_per_epoche(mode, dataset):
 
 def multi_crop(img, label, crop_size, image_size, crop_num=10):
     # it is not a best implementation of multiple crops for testing.
-    print 'img.shape = ', image_size, '; crop_size:', crop_size
+    print('img.shape = ', image_size, '; crop_size:', crop_size)
     flipped_image = tf.reverse(img, [1])
     img_shape = [image_size, image_size]
     central_ratio = float(crop_size) / image_size
@@ -66,8 +70,8 @@ def simple_central_crop(image, crop_size):
     img_shape = tf.shape(image)
     depth = image.get_shape()[2]
 
-    bbox_h_start = (img_shape[0] - crop_size[0]) / 2
-    bbox_w_start = (img_shape[1] - crop_size[1]) / 2
+    bbox_h_start = (img_shape[0] - crop_size[0]) // 2
+    bbox_w_start = (img_shape[1] - crop_size[1]) // 2
 
     bbox_begin = tf.stack([bbox_h_start, bbox_w_start, 0])
     bbox_size = tf.stack([crop_size[0], crop_size[1], -1])
@@ -146,9 +150,9 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
 
         data_files = glob.glob(data_path)
         if dataset == 'caltech256' and mode == 'train':
-            num_files = int(examples_per_class / 5)
+            num_files = int(examples_per_class // 5)
             data_files = sorted(data_files)[0:num_files]
-        print data_files
+        print(data_files)
 
         file_queue = tf.train.string_input_producer(data_files, shuffle=(mode == 'train'))
 
@@ -176,8 +180,8 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
             new_shorter_edge = tf.constant(image_size)
             new_height, new_width = tf.cond(
                 height_smaller_than_width,
-                lambda: (new_shorter_edge, width * new_shorter_edge / height),
-                lambda: (height * new_shorter_edge / width, new_shorter_edge))
+                lambda: (new_shorter_edge, width * new_shorter_edge // height),
+                lambda: (height * new_shorter_edge // width, new_shorter_edge))
             image = tf.image.resize_images(image, [new_height, new_width])
 
         if blur:
@@ -204,7 +208,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                                                                 min_after_dequeue=8 * batch_size)
         else:
             if multicrops_for_eval:
-                print 'use multiple crops and the test batch size is not used.'
+                print('use multiple crops and the test batch size is not used.')
                 batch_images, batch_labels = multi_crop(image, label, crop_size, image_size)
                 batch_images = tf.convert_to_tensor(batch_images)
                 batch_labels = tf.convert_to_tensor(batch_labels)

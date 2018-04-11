@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import tensorflow as tf
 import numpy as np
 from tensorflow.python.training import moving_averages
@@ -263,7 +267,7 @@ def bottleneck_residual(inputs, out_channels, stride, data_format,
     orig_x = inputs
     with tf.variable_scope('bottleneck_v1/conv1'):
         """1x1, 64->64"""
-        x = conv2d_same(inputs, out_channels / 4, 1, 1,
+        x = conv2d_same(inputs, out_channels // 4, 1, 1,
                         trainable=trainable, data_format=data_format, initializer=initializer, float_type=float_type)
         x = batch_norm('BatchNorm', x, trainable, data_format, bn_mode, bn_use_gamma, bn_use_beta, bn_epsilon, bn_ema,
                        float_type)
@@ -271,7 +275,7 @@ def bottleneck_residual(inputs, out_channels, stride, data_format,
 
     with tf.variable_scope('bottleneck_v1/conv2'):
         """3x3, 64->64"""
-        x = conv2d_same(x, out_channels / 4, 3, stride, trainable, rate, data_format, initializer,
+        x = conv2d_same(x, out_channels // 4, 3, stride, trainable, rate, data_format, initializer,
                         float_type=float_type)
         x = batch_norm('BatchNorm', x, trainable, data_format, bn_mode, bn_use_gamma, bn_use_beta, bn_epsilon, bn_ema,
                        float_type)
@@ -380,7 +384,7 @@ def conv2d_transpose(name, x, out_channels,
 
         weights = get_transpose_filter(weights_shape, trainable)
         if trainable:
-            print 'training conv2d_transpose layer: ', name
+            print('training conv2d_transpose layer: ', name)
         deconv = tf.nn.conv2d_transpose(x, weights, output_shape,
                                         strides=strides, padding='SAME', data_format=data_format)
 

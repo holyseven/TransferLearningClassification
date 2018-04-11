@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 from datetime import datetime
 import os
@@ -131,7 +134,7 @@ def _process_image(filename, coder):
         image_data = f.read()
 
     if _is2convert(filename):
-        print 'Reencoding to JPEG for %s' % filename
+        print('Reencoding to JPEG for %s' % filename)
         image_data = coder.re_encode_jpeg(image_data)
 
     return image_data
@@ -154,7 +157,7 @@ def _process_image_files_batch(coder, thread_index, ranges, name, filenames, lab
     # thread would produce shards [0, 64).
     num_threads = len(ranges)
     assert not num_shards % num_threads
-    num_shards_per_batch = int(num_shards / num_threads)
+    num_shards_per_batch = int(num_shards // num_threads)
 
     shard_ranges = np.linspace(ranges[thread_index][0],
                                ranges[thread_index][1],
@@ -261,7 +264,7 @@ def _find_image_files(data_dir, data_sub):
         label = mapping[filename.split('/')[0]]
         labels.append(label)
         if 'jpg' not in filename:
-            print filename
+            print(filename)
         filenames.append(data_dir + 'Images/' + filename)
 
     # Shuffle the ordering of all image files in order to guarantee

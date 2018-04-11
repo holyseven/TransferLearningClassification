@@ -1,7 +1,14 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import sys
+sys.path.append('../')
 import tensorflow as tf
 import glob
 import numpy as np
 import matplotlib.pyplot as plt
+from database import dataset_reader
 
 
 def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
@@ -30,7 +37,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             if 'val' in mode or 'test' in mode:
                 data_path = '../create_databases/tfRecords-Foods/test-*'
         elif dataset == 'caltech256':
-            data_path = '../create_databases/tfRecords-Caltech/train-000*'
+            data_path = '../create_databases/tfRecords-Caltech/train*'
             if 'test' in mode:
                 data_path = '../create_databases/tfRecords-Caltech/test-*'
             if 'rest' in mode:
@@ -59,7 +66,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             raise ValueError('Not supported dataset %s', dataset)
 
         data_files = glob.glob(data_path)
-        print data_files
+        print(data_files)
 
         file_queue = tf.train.string_input_producer(data_files, shuffle=False)
 
@@ -88,8 +95,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         step = 0
-        import database.dataset_reader
-        max_iter = database.dataset_reader.num_per_epoche(mode, dataset)
+        max_iter = dataset_reader.num_per_epoche(mode, dataset)
         mean = np.zeros([3], np.float32)
         while step < max_iter + 1:
             #if step == 439:
@@ -100,7 +106,7 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
 
             [img_numpy, l, f] = sess.run([image, label, filename])
             if img_numpy.shape[-1] == 1:
-                print '\'' + f.split('256_ObjectCategories/')[-1] + '\','
+                print('\'' + f.split('256_ObjectCategories/')[-1] + '\',')
 
             # if step % 50 == 0:
             #     print step, l
@@ -108,9 +114,9 @@ def estimated_mean(mode='train', dataset='dogs120', resize_image_size=256):
             #     plt.show()
 
             mean += np.mean(img_numpy, axis=(0, 1))
-            print l
+            print(l)
             step += 1
-        print mean/max_iter
+        print(mean/max_iter)
         coord.request_stop()
         coord.join(threads)
 

@@ -1,3 +1,6 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import numpy as np
 import tensorflow as tf
@@ -73,8 +76,8 @@ class Network(object):
         elif self.optimizer == 'mom':
             optimizer = tf.train.MomentumOptimizer(self.lrn_rate_placeholder, self.momentum)
         else:
-            print 'unknown optimizer name: ', self.optimizer
-            print 'Default to Momentum.'
+            print('unknown optimizer name: ', self.optimizer)
+            print('Default to Momentum.')
             optimizer = tf.train.MomentumOptimizer(self.lrn_rate_placeholder, self.momentum)
 
         grads_vars = optimizer.compute_gradients(self.cost, colocate_gradients_with_ops=True)
@@ -93,8 +96,8 @@ class Network(object):
         if self.optimizer == 'sgd':
             optimizer = tf.train.GradientDescentOptimizer(self.lrn_rate_placeholder)
         else:
-            print 'unknown optimizer name: ', self.optimizer
-            print 'Default to Momentum.'
+            print('unknown optimizer name: ', self.optimizer)
+            print('Default to Momentum.')
             optimizer = tf.train.MomentumOptimizer(self.lrn_rate_placeholder, self.momentum)
 
         grads_vars = optimizer.compute_gradients(self.loss, colocate_gradients_with_ops=True)
@@ -118,33 +121,33 @@ class Network(object):
 
     def _decay(self, mode):
         """L2 weight decay loss."""
-        print '================== weight decay info   ===================='
+        print('================== weight decay info   ====================')
         if mode == 0:
-            print 'Applying L2 regularization...'
+            print('Applying L2 regularization...')
             l2_losses_existing_layers = 0
             l2_losses_new_layers = 0
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers += tf.nn.l2_loss(v)
                         continue
                     l2_losses_existing_layers += tf.nn.l2_loss(v)
             return tf.multiply(self.wd_rate_placeholder, l2_losses_existing_layers) \
                    + tf.multiply(self.wd_rate_placeholder2, l2_losses_new_layers)
         elif mode == 1:
-            print 'Applying L2-SP regularization...'
+            print('Applying L2-SP regularization...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             l2_losses_existing_layers = []
             l2_losses_new_layers = []
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
                         continue
 
-                    print v.name
+                    print(v.name)
 
                     name = v.name.split(':')[0]
                     pre_trained_weights = reader.get_tensor(name)
@@ -152,7 +155,7 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 101:
-            print 'Applying L2-SP regularization for all parameters (weights, biases, gammas, betas)...'
+            print('Applying L2-SP regularization for all parameters (weights, biases, gammas, betas)...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             l2_losses_existing_layers = []
             l2_losses_new_layers = []
@@ -161,14 +164,14 @@ class Network(object):
                 pre_trained_weights = reader.get_tensor(name)
 
                 if any(elem in v.name for elem in self.new_layers_names):
-                    print 'except ', v.name
+                    print('except ', v.name)
                     l2_losses_new_layers.append(tf.nn.l2_loss(v))
                     continue
                 l2_losses_existing_layers.append(tf.nn.l2_loss(v - pre_trained_weights))
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 2:
-            print 'Applying L2-SP-k regularization...'
+            print('Applying L2-SP-k regularization...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             l2_losses_existing_layers = []
             l2_losses_new_layers = []
@@ -180,7 +183,7 @@ class Network(object):
                     # and they are named by 'fc1_voc12_c?/weights:0' ? = 0, 1, 2, 3
                     if 'logits' in v.name:
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
-                        print 'new layers', v.name
+                        print('new layers', v.name)
                         continue
 
                     weights_varianbles.append(v)
@@ -194,15 +197,15 @@ class Network(object):
                 if 'shortcut' in name:
                     # because these layers are parallel to another three layers.
                     l2_losses_existing_layers.append(tf.scalar_mul(len(weights_varianbles) - i + 3, single_loss))
-                    print 'existing layers: ', len(weights_varianbles) - i + 3, name
+                    print('existing layers: ', len(weights_varianbles) - i + 3, name)
                 else:
                     l2_losses_existing_layers.append(tf.scalar_mul(len(weights_varianbles) - i, single_loss))
-                    print 'existing layers: ', len(weights_varianbles) - i, name
+                    print('existing layers: ', len(weights_varianbles) - i, name)
 
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 3:
-            print 'Applying L2-SP-exp regularization...'
+            print('Applying L2-SP-exp regularization...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             l2_losses_existing_layers = []
             l2_losses_new_layers = []
@@ -212,7 +215,7 @@ class Network(object):
                     pre_trained_weights = reader.get_tensor(name)
 
                     if 'logits' in v.name:
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
                         continue
                     dif = v - pre_trained_weights
@@ -220,14 +223,14 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 4:
-            print 'Applying L1-SP regularization...'
+            print('Applying L1-SP regularization...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             l1_losses_existing_layers = []
             l2_losses_new_layers = []
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
                         continue
 
@@ -238,14 +241,14 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l1_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 41:
-            print 'Applying L1-SP regularization with sqrt(x^2+\epsilon)...'
+            print('Applying L1-SP regularization with sqrt(x^2+\epsilon)...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             l1_losses_existing_layers = []
             l2_losses_new_layers = []
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
                         continue
                     name = v.name.split(':')[0]
@@ -255,7 +258,7 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l1_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 5:
-            print 'Applying Group-Lasso-SP regularization...'
+            print('Applying Group-Lasso-SP regularization...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
 
             lasso_loss_existing_layers = 0
@@ -263,7 +266,7 @@ class Network(object):
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers += tf.nn.l2_loss(v)
                         continue
 
@@ -286,7 +289,7 @@ class Network(object):
 
             return self.wd_rate_placeholder * lasso_loss_existing_layers + self.wd_rate_placeholder2 * l2_losses_new_layers
         elif mode == 50:
-            print 'Applying Group-Lasso-SP regularization, each group is one whole layer...'
+            print('Applying Group-Lasso-SP regularization, each group is one whole layer...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
 
             lasso_loss_existing_layers = 0
@@ -294,7 +297,7 @@ class Network(object):
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers += tf.nn.l2_loss(v)
                         continue
 
@@ -317,7 +320,7 @@ class Network(object):
 
             return self.wd_rate_placeholder * lasso_loss_existing_layers + self.wd_rate_placeholder2 * l2_losses_new_layers
         elif mode == 6:
-            print 'Applying L2-SP-Fisher Fisher Information Matrix (FIM) + fisher_epsilon,', self.fisher_epsilon, '...'
+            print('Applying L2-SP-Fisher Fisher Information Matrix (FIM) + fisher_epsilon,', self.fisher_epsilon, '...')
 
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             fim_dict = np.load(self.fisher_filename).item()
@@ -326,7 +329,7 @@ class Network(object):
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
                         continue
 
@@ -339,16 +342,16 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 61:
-            print 'Applying L2-SP-Fisher regularizatino clip(FIM) with max value', self.fisher_epsilon, '...'
+            print('Applying L2-SP-Fisher regularizatino clip(FIM) with max value', self.fisher_epsilon, '...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             fim_dict = np.load(self.fisher_filename).item()
             l2_losses_existing_layers = []
             l2_losses_new_layers = []
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
-                    print v.name
+                    print(v.name)
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers.append(tf.nn.l2_loss(v))
                         continue
 
@@ -361,7 +364,7 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 7:
-            print 'Applying Group-Lasso-SP-Fisher regularization + fisher_epsilon,', self.fisher_epsilon, '...'
+            print('Applying Group-Lasso-SP-Fisher regularization + fisher_epsilon,', self.fisher_epsilon, '...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
 
             fim_dict = np.load(self.fisher_filename).item()
@@ -370,7 +373,7 @@ class Network(object):
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers += tf.nn.l2_loss(v)
                         continue
 
@@ -392,7 +395,7 @@ class Network(object):
             return self.wd_rate_placeholder * lasso_loss_existing_layers + self.wd_rate_placeholder2 * l2_losses_new_layers
 
         elif mode == 71:
-            print 'Applying Group-Lasso-SP-Fisher regularizatino clip(FIM) with max value', self.fisher_epsilon, '...'
+            print('Applying Group-Lasso-SP-Fisher regularizatino clip(FIM) with max value', self.fisher_epsilon, '...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
 
             fim_dict = np.load(self.fisher_filename).item()
@@ -401,7 +404,7 @@ class Network(object):
             for v in tf.trainable_variables():
                 if 'weights' in v.name:
                     if any(elem in v.name for elem in self.new_layers_names):
-                        print 'except ', v.name
+                        print('except ', v.name)
                         l2_losses_new_layers += tf.nn.l2_loss(v)
                         continue
 
@@ -422,6 +425,6 @@ class Network(object):
 
             return self.wd_rate_placeholder * lasso_loss_existing_layers + self.wd_rate_placeholder2 * l2_losses_new_layers
 
-        print 'No regularization...'
+        print('No regularization...')
         return tf.convert_to_tensor(0)
 

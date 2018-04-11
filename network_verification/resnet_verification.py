@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import sys
 sys.path.append('../')
 from database import dataset_reader
@@ -56,10 +60,10 @@ def eval():
                 continue
             if v.name.find('logits') > 0:
                 last_layer_variables.append(v)
-                print 'last layer\'s variables: %s' % v.name
+                print('last layer\'s variables: %s' % v.name)
                 continue
 
-            print 'finetuned variables:', v.name
+            print('finetuned variables:', v.name)
             finetuned_variables.append(v)
 
         loader1 = tf.train.Saver(var_list=finetuned_variables)
@@ -77,11 +81,11 @@ def eval():
     else:
         print('No models loaded...')
 
-    print '======================= eval process begins ========================='
+    print('======================= eval process begins =========================')
     average_loss = 0.0
     average_precision = 0.0
     if FLAGS.test_max_iter is None:
-        max_iter = dataset_reader.num_per_epoche('eval', 'imagenet') / FLAGS.test_batch_size
+        max_iter = dataset_reader.num_per_epoche('eval', 'imagenet') // FLAGS.test_batch_size
     else:
         max_iter = FLAGS.test_max_iter
 
@@ -95,9 +99,9 @@ def eval():
         average_loss += loss
         average_precision += precision
         if step % 100 == 0:
-            print step, '/', max_iter, ':', average_loss / step, average_precision / step
+            print(step, '/', max_iter, ':', average_loss / step, average_precision / step)
         elif step % 10 == 0:
-            print step, '/', max_iter, ':', average_loss / step, average_precision / step
+            print(step, '/', max_iter, ':', average_loss / step, average_precision / step)
 
         # batch size = 100, resnet_v1_101:
         # 10 / 500 : 1.05231621861 0.766999977827
@@ -144,8 +148,8 @@ def eval():
 def main(_):
     loss, precision = eval()
     step = 0
-    print '%s %s] Step %s Test' % (str(datetime.datetime.now()), str(os.getpid()), step)
-    print '\t loss = %.4f, precision = %.4f' % (loss, precision)
+    print('%s %s] Step %s Test' % (str(datetime.datetime.now()), str(os.getpid()), step))
+    print('\t loss = %.4f, precision = %.4f' % (loss, precision))
 
 
 if __name__ == '__main__':

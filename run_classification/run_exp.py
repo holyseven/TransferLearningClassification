@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import sys
 sys.path.append('../')
 
@@ -18,17 +22,17 @@ parser.add_argument('--epsilon', type=float, default=0.00001, help='epsilon in b
 parser.add_argument('--norm_only', type=int, default=0,
                     help='no beta nor gamma in fused_bn (1). Or with beta and gamma(0).')
 parser.add_argument('--data_type', type=int, default=32, help='float32 or float16')
-parser.add_argument('--database', type=str, default='caltech256', help='dogs120, indoors67, foods101, caltech256')
+parser.add_argument('--database', type=str, default='dogs120', help='dogs120, indoors67, foods101, caltech256')
 parser.add_argument('--color_switch', type=int, default=0, help='color switch or not')
-parser.add_argument('--eval_only', type=int, default=0, help='only do the evaluation (1) or do train and eval (0).')
+parser.add_argument('--eval_only', type=int, default=1, help='only do the evaluation (1) or do train and eval (0).')
 parser.add_argument('--resize_image', type=int, default=1, help='whether resizing images for training and testing.')
 
 parser.add_argument('--separate_reg', type=int, default=0, help='separate regularizers for optimizer.')
 parser.add_argument('--batch_size', type=int, default=10, help='batch size')
 parser.add_argument('--optimizer', type=str, default='mom', help='mom, sgd, more to be added')
-parser.add_argument('--log_dir', type=str, default='0', help='according to gpu index and wd method')
+parser.add_argument('--log_dir', type=str, default='1', help='according to gpu index and wd method')
 parser.add_argument('--lrn_rate', type=float, default=0.01, help='initial learning rate')
-parser.add_argument('--weight_decay_mode', type=int, default=1, help='weight decay mode')
+parser.add_argument('--weight_decay_mode', type=int, default=0, help='weight decay mode')
 parser.add_argument('--weight_decay_rate', type=float, default=0.01, help='weight decay rate for existing layers')
 parser.add_argument('--weight_decay_rate2', type=float, default=0.01, help='weight decay rate for new layers')
 parser.add_argument('--train_max_iter', type=int, default=9000, help='Maximum training iteration')
@@ -53,21 +57,21 @@ parser.add_argument('--fisher_epsilon', type=float, default=0, help='clip value 
 parser.add_argument('--examples_per_class', type=int, default=60, help='examples per class')
 
 parser.add_argument('--test_max_iter', type=int, default=None, help='maximum test iteration')
-parser.add_argument('--test_with_multicrops', type=int, default=0, help='whether using multiple crops for testing.')
+parser.add_argument('--test_with_multicrops', type=int, default=1, help='whether using multiple crops for testing.')
 parser.add_argument('--test_crop_size', type=int, default=224, help='crop image size for test.')
-parser.add_argument('--test_batch_size', type=int, default=100, help='batch size used for test or validation')
+parser.add_argument('--test_batch_size', type=int, default=110, help='batch size used for test or validation')
 FLAGS = parser.parse_args()
 
 
 def train(resume_step=None):
     global_step = tf.get_variable('global_step', [], dtype=tf.int64,
                                   initializer=tf.constant_initializer(0), trainable=False)
-    print '================',
+    print('================', end='')
     if FLAGS.data_type == 16:
-        print 'using tf.float16 ====================='
+        print('using tf.float16 =====================')
         data_type = tf.float16
     else:
-        print 'using tf.float32 ====================='
+        print('using tf.float32 =====================')
         data_type = tf.float32
 
     wd_rate_ph = tf.placeholder(data_type, shape=())
@@ -106,7 +110,7 @@ def train(resume_step=None):
         for i in v.get_shape().as_list():
             num *= i
         num_params += num
-    print "Trainable parameters' num: %d" % num_params
+    print("Trainable parameters' num: %d" % num_params)
 
     precisions = tf.nn.in_top_k(tf.cast(model.predictions, tf.float32), model.labels, 1)
     precision_op = tf.reduce_mean(tf.cast(precisions, tf.float32))
@@ -117,16 +121,16 @@ def train(resume_step=None):
     logdir = LogDir(FLAGS.database, FLAGS.log_dir, FLAGS.weight_decay_mode)
     logdir.print_all_info()
     if not os.path.exists(logdir.log_dir):
-        print 'creating ', logdir.log_dir, '...'
+        print('creating ', logdir.log_dir, '...')
         os.mkdir(logdir.log_dir)
     if not os.path.exists(logdir.database_dir):
-        print 'creating ', logdir.database_dir, '...'
+        print('creating ', logdir.database_dir, '...')
         os.mkdir(logdir.database_dir)
     if not os.path.exists(logdir.exp_dir):
-        print 'creating ', logdir.exp_dir, '...'
+        print('creating ', logdir.exp_dir, '...')
         os.mkdir(logdir.exp_dir)
     if not os.path.exists(logdir.snapshot_dir):
-        print 'creating ', logdir.snapshot_dir, '...'
+        print('creating ', logdir.snapshot_dir, '...')
         os.mkdir(logdir.snapshot_dir)
 
     init = [tf.global_variables_initializer(), tf.local_variables_initializer()]
@@ -147,7 +151,7 @@ def train(resume_step=None):
         fine_tune_variables = []
         for v in import_variables:
             if 'logits' in v.name or 'Momentum' in v.name:
-                print 'not loading %s' % v.name
+                print('not loading %s' % v.name)
                 continue
             fine_tune_variables.append(v)
 
@@ -162,9 +166,9 @@ def train(resume_step=None):
         step = resume_step
         print('Succesfully loaded model from %s at step=%s.' % (i_ckpt, resume_step))
     else:
-        print 'Not import any model.'
+        print('Not import any model.')
 
-    print '=========================== training process begins ================================='
+    print('=========================== training process begins =================================')
     f_log = open(logdir.exp_dir + '/' + str(datetime.datetime.now()) + '.txt', 'w')
     f_log.write('step,loss,precision,wd\n')
     f_log.write(sorted_str_dict(FLAGS.__dict__) + '\n')
@@ -234,10 +238,10 @@ def train(resume_step=None):
             f_log.write('%d,%f,%f,%f\n' % (step, average_loss, average_precision, wd))
             f_log.flush()
 
-            print '%s %s] Step %s, lr = %f, wd_rate = %f, wd_rate_2 = %f ' \
-                  % (str(datetime.datetime.now()), str(os.getpid()), step, lrn_rate, wd_rate, wd_rate2)
-            print '\t loss = %.4f, precision = %.4f, wd = %.4f' % (average_loss, average_precision, wd)
-            print '\t estimated time left: %.1f hours. %d/%d' % (left_hours, step, max_iter)
+            print('%s %s] Step %s, lr = %f, wd_rate = %f, wd_rate_2 = %f ' \
+                  % (str(datetime.datetime.now()), str(os.getpid()), step, lrn_rate, wd_rate, wd_rate2))
+            print('\t loss = %.4f, precision = %.4f, wd = %.4f' % (average_loss, average_precision, wd))
+            print('\t estimated time left: %.1f hours. %d/%d' % (left_hours, step, max_iter))
 
             average_loss = 0.0
             average_precision = 0.0
@@ -251,12 +255,12 @@ def train(resume_step=None):
 def eval(i_ckpt):
     tf.reset_default_graph()
 
-    print '================',
+    print('================', end='')
     if FLAGS.data_type == 16:
-        print 'using tf.float16 ====================='
+        print('using tf.float16 =====================')
         data_type = tf.float16
     else:
-        print 'using tf.float32 ====================='
+        print('using tf.float32 =====================')
         data_type = tf.float32
 
     with tf.variable_scope(FLAGS.resnet):
@@ -296,11 +300,11 @@ def eval(i_ckpt):
         eval_step = i_ckpt.split('-')[-1]
         print('Succesfully loaded model from %s at step=%s.' % (i_ckpt, eval_step))
 
-    print '======================= eval process begins ========================='
+    print('======================= eval process begins =========================')
     average_loss = 0.0
     average_precision = 0.0
     if FLAGS.test_max_iter is None:
-        max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database) / FLAGS.test_batch_size
+        max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database) // FLAGS.test_batch_size
     else:
         max_iter = FLAGS.test_max_iter
 
@@ -316,8 +320,8 @@ def eval(i_ckpt):
 
         average_loss += loss
         average_precision += precision
-        if step % 100 == 0:
-            print step, '/', max_iter, ':', average_loss / step, average_precision / step
+        if step % 10 == 0:
+            print(step, '/', max_iter, ':', average_loss / step, average_precision / step)
 
     coord.request_stop()
     coord.join(threads)
@@ -329,9 +333,9 @@ def main(_):
     # ============================================================================
     # ============================= TRAIN ========================================
     # ============================================================================
-    print sorted_str_dict(FLAGS.__dict__)
+    print(sorted_str_dict(FLAGS.__dict__))
     if FLAGS.resume_step is not None:
-        print 'Ready to resume from step %d.' % FLAGS.resume_step
+        print('Ready to resume from step %d.' % FLAGS.resume_step)
 
     assert FLAGS.gpu_num is not None, 'should specify the number of gpu.'
     assert FLAGS.gpu_num > 0, 'the number of gpu should be bigger than 0.'
@@ -358,8 +362,8 @@ def main(_):
         i_ckpt = i_ckpt.split('.index')[0]
         loss, precision = eval(i_ckpt)
         step = i_ckpt.split('-')[-1]
-        print '%s %s] Step %s Test' % (str(datetime.datetime.now()), str(os.getpid()), step)
-        print '\t loss = %.4f, precision = %.4f' % (loss, precision)
+        print('%s %s] Step %s Test' % (str(datetime.datetime.now()), str(os.getpid()), step))
+        print('\t loss = %.4f, precision = %.4f' % (loss, precision))
         f_log.write('TEST:%s,%f,%f\n' % (step, loss, precision))
         f_log.flush()
 

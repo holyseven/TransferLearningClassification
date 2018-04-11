@@ -1,3 +1,7 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import os
 import glob
 import ast
@@ -28,14 +32,14 @@ class LogDir(object):
         self.snapshot_dir = os.path.join(self.exp_dir, 'snapshot')
 
     def print_all_info(self):
-        print '============================================'
-        print '=============== LogDir Info ================'
-        print 'log_dir', self.log_dir
-        print 'database_dir', self.database_dir
-        print 'exp_dir', self.exp_dir
-        print 'snapshot_dir', self.snapshot_dir
-        print '=============== LogDir Info ================'
-        print '============================================'
+        print('============================================')
+        print('=============== LogDir Info ================')
+        print('log_dir', self.log_dir)
+        print('database_dir', self.database_dir)
+        print('exp_dir', self.exp_dir)
+        print('snapshot_dir', self.snapshot_dir)
+        print('=============== LogDir Info ================')
+        print('============================================')
 
 
 class ExpLog(object):
@@ -83,12 +87,12 @@ class ExpLog(object):
     def printall(self):
         if self.best_loss < 0 and self.best_precision == 0:
             return
-        print '=============== Exp Log Info ==============='
-        print self.logfile_path
-        print self.hyperp_dict
-        print 'precision: ', self.best_precision
-        print 'loss: ', self.best_loss
-        print 'position: ', self.best_position
+        print('=============== Exp Log Info ===============')
+        print(self.logfile_path)
+        print(self.hyperp_dict)
+        print('precision: ', self.best_precision)
+        print('loss: ', self.best_loss)
+        print('position: ', self.best_position)
 
     def print_some(self, list_toprint, filters):
         if filters is not None:
@@ -97,8 +101,8 @@ class ExpLog(object):
                     return
 
         for e in list_toprint:
-            print self.hyperp_dict.get(e, '?'), '\t',
-        print self.best_precision, '\t', self.best_loss
+            print(self.hyperp_dict.get(e, '?'), '\t', end='')
+        print(self.best_precision, '\t', self.best_loss)
 
 
 class LogReader(object):
@@ -189,7 +193,7 @@ class LogReader(object):
 
         logs_to_print = []
         if passing_filters is not None:
-            print 'filters: ', passing_filters
+            print('filters: ', passing_filters)
             for i in range(len(self.exp_logs)):
                 filtered = False
                 for k in passing_filters:
@@ -221,17 +225,17 @@ class LogReader(object):
         for i in range(len(logs_to_print)):
             pre_hyperp = logs_to_print[0].get_same_hyperp(logs_to_print[i], pre_hyperp)
 
-        print 'same hyperparameters: ', pre_hyperp
-        print '=============== Exp Log Info ==============='
+        print('same hyperparameters: ', pre_hyperp)
+        print('=============== Exp Log Info ===============')
         for i in range(len(logs_to_print)):
-            print logs_to_print[i].logfile_path
-            print '{',
+            print(logs_to_print[i].logfile_path)
+            print('{',)
             for k in sorted(logs_to_print[i].hyperp_dict):
                 if k in pre_hyperp:
                     continue
 
-                print '\'%s\':'%k, logs_to_print[i].hyperp_dict[k], ',',
-            print '}'
-            print 'precision: ', logs_to_print[i].best_precision
-            print 'loss: ', logs_to_print[i].best_loss
-            print 'position: ', logs_to_print[i].best_position
+                print('\'%s\':'%k, logs_to_print[i].hyperp_dict[k], ',', end='')
+            print('}')
+            print('precision: ', logs_to_print[i].best_precision)
+            print('loss: ', logs_to_print[i].best_loss)
+            print('position: ', logs_to_print[i].best_position)
