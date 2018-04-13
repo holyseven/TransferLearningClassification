@@ -149,8 +149,10 @@ def train(resume_step=None):
 
     if FLAGS.fine_tune_filename is not None and resume_step is None:
         fine_tune_variables = []
+        new_layers_names = model.new_layers_names
+        new_layers_names.append('Momentum')
         for v in import_variables:
-            if 'logits' in v.name or 'Momentum' in v.name:
+            if any(elem in v.name for elem in new_layers_names):
                 print('not loading %s' % v.name)
                 continue
             fine_tune_variables.append(v)
