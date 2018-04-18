@@ -43,22 +43,38 @@ def num_per_epoche(mode, dataset):
 
 def multi_crop(img, label, crop_size, image_size, crop_num=10):
     # it is not a best implementation of multiple crops for testing.
+
+    def central_crop(img, crop_size):
+        img_shape = tf.shape(img)
+        depth = img.get_shape()[2]
+        img_h = tf.to_double(img_shape[0])
+        img_w = tf.to_double(img_shape[1])
+        bbox_h_start = tf.to_int32((img_h - crop_size) / 2)
+        bbox_w_start = tf.to_int32((img_w - crop_size) / 2)
+
+        bbox_begin = tf.stack([bbox_h_start, bbox_w_start, 0])
+        bbox_size = tf.stack([crop_size, crop_size, -1])
+        image = tf.slice(img, bbox_begin, bbox_size)
+
+        # The first two dimensions are dynamic and unknown.
+        image.set_shape([crop_size, crop_size, depth])
+        return image
+
     print('img.shape = ', image_size, '; crop_size:', crop_size)
     flipped_image = tf.reverse(img, [1])
-    img_shape = [image_size, image_size]
-    central_ratio = float(crop_size) / image_size
+    img_shape = tf.shape(img)
     crops = [
         img[:crop_size, :crop_size, :],  # Upper Left
         img[:crop_size, img_shape[1] - crop_size:, :],  # Upper Right
         img[img_shape[0] - crop_size:, :crop_size, :],  # Lower Left
         img[img_shape[0] - crop_size:, img_shape[1] - crop_size:, :],  # Lower Right
-        tf.image.central_crop(img, central_ratio),
+        central_crop(img, crop_size),
 
         flipped_image[:crop_size, :crop_size, :],  # Upper Left
         flipped_image[:crop_size, img_shape[1] - crop_size:, :],  # Upper Right
         flipped_image[img_shape[0] - crop_size:, :crop_size, :],  # Lower Left
         flipped_image[img_shape[0] - crop_size:, img_shape[1] - crop_size:, :],  # Lower Right
-        tf.image.central_crop(flipped_image, central_ratio)
+        central_crop(flipped_image, crop_size)
     ]
 
     assert len(crops) == crop_num
