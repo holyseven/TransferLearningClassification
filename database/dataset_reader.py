@@ -97,10 +97,71 @@ def simple_central_crop(image, crop_size):
     return image
 
 
-def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=False, resize_image=True,
-                resize_image_size=256, crop_size=224, examples_per_class=None, multicrops_for_eval=False):
+def find_data_path(dataset, mode):
+    if dataset == 'indoors67':
+        num_classes = 67
+        # computed with training data.
+        IMG_MEAN = [123.55967712, 110.04705048, 93.7353363]  # RGB [124.65235427, 110.04237483, 94.99279042]
+        data_path = '../create_databases/tfRecords-Indoors/Train-*'
+        if 'val' in mode or 'test' in mode:
+            data_path = '../create_databases/tfRecords-Indoors/Test-*'
+    elif dataset == 'dogs120':
+        num_classes = 120
+        # computed with training data.
+        IMG_MEAN = [120.40182495, 115.22045135, 98.45511627]  # RGB [121.49871251, 115.17340629, 99.73959828]
+        data_path = '../create_databases/tfRecords-Dogs/train-*'
+        if 'val' in mode or 'test' in mode:
+            data_path = '../create_databases/tfRecords-Dogs/test-*'
+    elif dataset == 'caltech256':
+        num_classes = 257
+        # computed with training data.
+        IMG_MEAN = [140.48295593, 135.94039917, 127.60546112]  # RGB [140.48295593, 135.94039917, 127.60546112]
+        data_path = '../create_databases/tfRecords-Caltech/train-*'
+        if 'val' in mode or 'test' in mode:
+            data_path = '../create_databases/tfRecords-Caltech/test-*'  # test.
+    elif dataset == 'foods101':
+        num_classes = 101
+        # computed with training data.
+        IMG_MEAN = [137.87016502, 113.09658086, 86.3819538]  # RGB [137.87016502, 113.09658086, 86.3819538]
+        data_path = '../create_databases/tfRecords-Foods/train-*'
+        if 'val' in mode or 'test' in mode:
+            data_path = '../create_databases/tfRecords-Foods/test-*'
+    elif dataset == 'places365':
+        num_classes = 365
+        IMG_MEAN = [115.59942627, 112.52274323, 102.81996155]  # RGB
+        data_path = '../create_databases/tfRecords-Places/train*'
+        if 'val' in mode:
+            data_path = '../create_databases/tfRecords-Places/val*'
+    elif dataset == 'imagenet':
+        num_classes = 1000
+        IMG_MEAN = [123.68, 116.779, 103.939]  # RGB
+        data_path = '../create_databases/tfRecords-ImageNet/train-*'
+        if 'val' in mode:
+            data_path = '../create_databases/tfRecords-ImageNet/validation-*'
+    else:
+        raise ValueError('Not supported dataset %s', dataset)
+    return data_path, IMG_MEAN, num_classes
+
+
+def build_training_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=False, resize_image=True,
+                         base_image_size=256, crop_size=224, random_scale_for_training=None, examples_per_class=None):
+    """
+    Build training input (mode == 'training') or single-crop test input (mode == 'val').
+    :param batch_size:
+    :param mode:
+    :param dataset:
+    :param blur:
+    :param color_switch:
+    :param resize_image:
+    :param base_image_size:
+    :param crop_size:
+    :param random_scale_for_training:
+    :param examples_per_class:
+    :return:
+    """
+
     with tf.device('/cpu:0'):
-        image_size = resize_image_size
+        image_size = base_image_size
 
         feature_map = {
             'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
@@ -109,46 +170,7 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                                                       default_value=-1),
         }
 
-        if dataset == 'indoors67':
-            num_classes = 67
-            # computed with training data.
-            IMG_MEAN = [123.55967712, 110.04705048, 93.7353363]  # RGB [124.65235427, 110.04237483, 94.99279042]
-            data_path = '../create_databases/tfRecords-Indoors/Train-*'
-            if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Indoors/Test-*'
-        elif dataset == 'dogs120':
-            num_classes = 120
-            # computed with training data.
-            IMG_MEAN = [120.40182495, 115.22045135, 98.45511627]  # RGB [121.49871251, 115.17340629, 99.73959828]
-            data_path = '../create_databases/tfRecords-Dogs/train-*'
-            if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Dogs/test-*'
-        elif dataset == 'caltech256':
-            num_classes = 257
-            # computed with training data.
-            IMG_MEAN = [140.48295593, 135.94039917, 127.60546112]  # RGB [140.48295593, 135.94039917, 127.60546112]
-            data_path = '../create_databases/tfRecords-Caltech/train-*'
-            if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Caltech/test-*'  # test.
-        elif dataset == 'foods101':
-            num_classes = 101
-            # computed with training data.
-            IMG_MEAN = [137.87016502, 113.09658086, 86.3819538]  # RGB [137.87016502, 113.09658086, 86.3819538]
-            data_path = '../create_databases/tfRecords-Foods/train-*'
-            if 'val' in mode or 'test' in mode:
-                data_path = '../create_databases/tfRecords-Foods/test-*'
-        elif dataset == 'places365':
-            num_classes = 365
-            IMG_MEAN = [115.59942627, 112.52274323, 102.81996155]  # RGB
-            data_path = '../create_databases/tfRecords-Places/train*'
-            if 'val' in mode:
-                data_path = '../create_databases/tfRecords-Places/val*'
-        elif dataset == 'imagenet':
-            num_classes = 1000
-            IMG_MEAN = [123.68, 116.779, 103.939]  # RGB
-            data_path = '../create_databases/tfRecords-ImageNet/train-*'
-            if 'val' in mode:
-                data_path = '../create_databases/tfRecords-ImageNet/validation-*'
+        if dataset == 'imagenet':
             feature_map = {
                 'image/height': tf.FixedLenFeature([1], dtype=tf.int64,
                                                    default_value=-1),
@@ -161,8 +183,8 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                 'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
                                                        default_value=''),
             }
-        else:
-            raise ValueError('Not supported dataset %s', dataset)
+
+        data_path, IMG_MEAN, num_classes = find_data_path(dataset, mode)
 
         data_files = glob.glob(data_path)
         if dataset == 'caltech256' and mode == 'train':
@@ -199,7 +221,18 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                 height_smaller_than_width,
                 lambda: (new_shorter_edge, width * new_shorter_edge // height),
                 lambda: (height * new_shorter_edge // width, new_shorter_edge))
-            image = tf.image.resize_images(image, [new_height, new_width])
+
+            if random_scale_for_training is not None:
+                scale = tf.random_uniform([1],
+                                          minval=random_scale_for_training[0],
+                                          maxval=random_scale_for_training[1],
+                                          seed=None)
+                print('database random scale: ', random_scale_for_training)
+                new_height = tf.to_int32(tf.multiply(tf.cast(new_height, tf.float32), scale))
+                new_width = tf.to_int32(tf.multiply(tf.cast(new_width, tf.float32), scale))
+
+            new_shape = tf.squeeze(tf.stack([new_height, new_width]), squeeze_dims=[1])
+            image = tf.image.resize_images(image, new_shape)
 
         if blur:
             image = tf.image.random_brightness(image, max_delta=63. / 255.)
@@ -224,21 +257,93 @@ def build_input(batch_size, mode, dataset='dogs120', blur=True, color_switch=Fal
                                                                 num_threads=num_threads,
                                                                 min_after_dequeue=8 * batch_size)
         else:
-            if multicrops_for_eval:
-                print('use multiple crops and the test batch size is not used.')
-                batch_images, batch_labels = multi_crop(image, label, crop_size, image_size)
-                batch_images = tf.convert_to_tensor(batch_images)
-                batch_labels = tf.convert_to_tensor(batch_labels)
-                batch_size = batch_images.get_shape()[0]
-            else:
-                image = simple_central_crop(image, [crop_size, crop_size])
-                num_threads = 4
-                batch_images, batch_labels = tf.train.batch([image, label[0]], batch_size=batch_size,
-                                                            capacity=16 * batch_size,
-                                                            num_threads=num_threads)
+            image = simple_central_crop(image, [crop_size, crop_size])
+            num_threads = 4
+            batch_images, batch_labels = tf.train.batch([image, label[0]], batch_size=batch_size,
+                                                        capacity=16 * batch_size,
+                                                        num_threads=num_threads)
 
         assert len(batch_images.get_shape()) == 4
         assert batch_images.get_shape()[0] == batch_size
         assert batch_images.get_shape()[-1] == 3
 
         return batch_images, batch_labels, num_classes
+
+
+def build_one_image(dataset='dogs120', color_switch=False, resize_image=True, image_size=256):
+    """
+    The output can be followed by a multi-cropping.
+    :param dataset:
+    :param color_switch:
+    :param resize_image:
+    :param image_size:
+    :return:
+    """
+    with tf.device('/cpu:0'):
+        feature_map = {
+            'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
+                                                default_value=''),
+            'image/class/trainid': tf.FixedLenFeature([1], dtype=tf.int64,
+                                                      default_value=-1),
+        }
+
+        if dataset == 'imagenet':
+            feature_map = {
+                'image/height': tf.FixedLenFeature([1], dtype=tf.int64,
+                                                   default_value=-1),
+                'image/width': tf.FixedLenFeature([1], dtype=tf.int64,
+                                                  default_value=-1),
+                'image/encoded': tf.FixedLenFeature([], dtype=tf.string,
+                                                    default_value=''),
+                'image/class/label': tf.FixedLenFeature([1], dtype=tf.int64,
+                                                        default_value=-1),
+                'image/class/text': tf.FixedLenFeature([], dtype=tf.string,
+                                                       default_value=''),
+            }
+
+        data_path, IMG_MEAN, num_classes = find_data_path(dataset, 'val')
+
+        data_files = glob.glob(data_path)
+        assert len(data_files) > 0, 'No database is found.'
+
+        file_queue = tf.train.string_input_producer(data_files, shuffle=False)
+
+        # Define a reader and read the next record
+        reader = tf.TFRecordReader()
+        _, serialized_example = reader.read(file_queue)
+        features = tf.parse_single_example(serialized_example, features=feature_map)
+        image = tf.image.decode_jpeg(features['image/encoded'], channels=3)
+        image = tf.cast(image, tf.float32)
+
+        if dataset == 'imagenet':
+            label = tf.cast(features['image/class/label'], tf.int32) - 1
+        else:
+            label = tf.cast(features['image/class/trainid'], tf.int32)
+
+        if resize_image:
+            # originally, resize to [image_size, image_size]
+            image = tf.image.resize_images(image, [image_size, image_size])
+        else:
+            # but it is better to keep the scale.
+            # L2-SP can have more than 88% precision on Dogs, with a pre-trained resnet-101 model.
+            height = tf.shape(image)[0]
+            width = tf.shape(image)[1]
+            height_smaller_than_width = tf.less_equal(height, width)
+            new_shorter_edge = tf.constant(image_size)
+            new_height, new_width = tf.cond(
+                height_smaller_than_width,
+                lambda: (new_shorter_edge, width * new_shorter_edge // height),
+                lambda: (height * new_shorter_edge // width, new_shorter_edge))
+
+            image = tf.image.resize_images(image, [new_height, new_width])
+
+        # image is an RGB image. So subtract an RGB value.
+        image -= IMG_MEAN
+
+        # color_switch: rgb (in db) -> bgr, depends on the pre-trained model.
+        # if model is transferred from caffe model, use bgr; else, use rgb.
+        if color_switch:
+            img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=image)
+            image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
+
+        return image, label[0], num_classes

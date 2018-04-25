@@ -9,7 +9,7 @@ import datetime
 import os
 
 import tensorflow as tf
-from database import dataset_reader
+from database import dataset_reader, dataset_helper
 from model import resnet
 from experiment_manager.utils import LogDir, sorted_str_dict
 
@@ -27,6 +27,7 @@ parser.add_argument('--color_switch', type=int, default=0, help='color switch or
 parser.add_argument('--eval_only', type=int, default=0, help='only do the evaluation (1) or do train and eval (0).')
 parser.add_argument('--resize_image', type=int, default=1, help='whether resizing images for training and testing.')
 
+parser.add_argument('--random_scale', type=str, default=None, help='separate regularizers for optimizer.')
 parser.add_argument('--separate_reg', type=int, default=0, help='separate regularizers for optimizer.')
 parser.add_argument('--batch_size', type=int, default=10, help='batch size')
 parser.add_argument('--optimizer', type=str, default='mom', help='mom, sgd, more to be added')
@@ -59,6 +60,7 @@ parser.add_argument('--examples_per_class', type=int, default=60, help='examples
 parser.add_argument('--test_max_iter', type=int, default=None, help='maximum test iteration')
 parser.add_argument('--test_with_multicrops', type=int, default=0, help='whether using multiple crops for testing.')
 parser.add_argument('--test_crop_size', type=int, default=224, help='crop image size for test.')
+parser.add_argument('--test_image_size', type=int, default=384, help='crop image size for test.')
 parser.add_argument('--test_batch_size', type=int, default=100, help='batch size used for test or validation')
 FLAGS = parser.parse_args()
 
@@ -78,13 +80,19 @@ def train(resume_step=None):
     wd_rate2_ph = tf.placeholder(data_type, shape=())
     lrn_rate_ph = tf.placeholder(data_type, shape=())
 
+    random_scale_list = None
+    if FLAGS.random_scale is not None:
+        scales = FLAGS.random_scale.split(',')
+        random_scale_list = float(scales[0]), float(scales[1])
+
     with tf.variable_scope(FLAGS.resnet):
-        images, labels, num_classes = dataset_reader.build_input(FLAGS.batch_size, 'train',
-                                                                 examples_per_class=FLAGS.examples_per_class,
-                                                                 dataset=FLAGS.database,
-                                                                 resize_image=FLAGS.resize_image,
-                                                                 color_switch=FLAGS.color_switch,
-                                                                 blur=FLAGS.blur)
+        images, labels, num_classes = dataset_reader.build_training_input(FLAGS.batch_size, 'train',
+                                                                          examples_per_class=FLAGS.examples_per_class,
+                                                                          dataset=FLAGS.database,
+                                                                          resize_image=FLAGS.resize_image,
+                                                                          color_switch=FLAGS.color_switch,
+                                                                          blur=FLAGS.blur,
+                                                                          random_scale_for_training=random_scale_list)
         model = resnet.ResNet(num_classes, lrn_rate_ph, wd_rate_ph, wd_rate2_ph,
                               optimizer=FLAGS.optimizer,
                               mode='train', bn_epsilon=FLAGS.epsilon, resnet=FLAGS.resnet, norm_only=FLAGS.norm_only,
@@ -265,27 +273,21 @@ def eval(i_ckpt):
         print('using tf.float32 =====================')
         data_type = tf.float32
 
+    image, label, num_classes = dataset_reader.build_one_image(dataset=FLAGS.database,
+                                                               color_switch=FLAGS.color_switch,
+                                                               resize_image=FLAGS.resize_image,
+                                                               image_size=FLAGS.test_image_size)
+    images = tf.placeholder(tf.float32, (None, FLAGS.test_crop_size, FLAGS.test_crop_size, 3))
+    labels = tf.placeholder(tf.int32, (None))
+
     with tf.variable_scope(FLAGS.resnet):
-        images, labels, num_classes = dataset_reader.build_input(FLAGS.test_batch_size,
-                                                                 'val',
-                                                                 crop_size=FLAGS.test_crop_size,
-                                                                 dataset=FLAGS.database,
-                                                                 color_switch=FLAGS.color_switch,
-                                                                 blur=0,
-                                                                 resize_image=FLAGS.resize_image,
-                                                                 multicrops_for_eval=FLAGS.test_with_multicrops)
         model = resnet.ResNet(num_classes, None, None, None,
                               mode='eval', bn_epsilon=FLAGS.epsilon, norm_only=FLAGS.norm_only, resnet=FLAGS.resnet,
                               float_type=data_type)
         logits = model.inference(images)
-        model.compute_loss(labels, logits)
 
-    precisions = tf.nn.in_top_k(tf.cast(model.predictions, tf.float32), model.labels, 1)
-    precision_op = tf.reduce_mean(tf.cast(precisions, tf.float32))
-
-    if FLAGS.test_with_multicrops == 1:
-        precisions = tf.nn.in_top_k([tf.reduce_mean(model.predictions, axis=[0])], [labels[0]], 1)
-        precision_op = tf.cast(precisions, tf.float32)
+    precisions = tf.nn.in_top_k([tf.reduce_mean(model.predictions, axis=[0])], labels, 1)
+    precision_op = tf.cast(precisions, tf.float32)
 
     # ========================= end of building model ================================
 
@@ -305,20 +307,18 @@ def eval(i_ckpt):
     print('======================= eval process begins =========================')
     average_loss = 0.0
     average_precision = 0.0
-    if FLAGS.test_max_iter is None:
-        max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database) // FLAGS.test_batch_size
-    else:
-        max_iter = FLAGS.test_max_iter
-
-    if FLAGS.test_with_multicrops == 1:
-        max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database)
+    max_iter = dataset_reader.num_per_epoche('eval', FLAGS.database)
 
     step = 0
     while step < max_iter:
         step += 1
+        np_image, np_label = sess.run([image, label])
+        np_images = dataset_helper.multicrops_np_image(np_image, FLAGS.test_crop_size)
+        feed_dict = {images: np_images, labels: [np_label]}
+
         loss, precision = sess.run([
             model.loss, precision_op
-        ])
+        ], feed_dict=feed_dict)
 
         average_loss += loss
         average_precision += precision

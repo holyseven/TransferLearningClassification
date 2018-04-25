@@ -47,6 +47,8 @@ class Network(object):
 
         self.new_layers_names = ['logits', 'global_step']
 
+        self.loss = tf.constant(0.0)
+
     def inference(self, images):
         self.logits = None
         raise NotImplementedError("Please Implement this method")

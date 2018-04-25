@@ -26,19 +26,17 @@ parser.add_argument('--pre_trained_filename', type=str, default='../z_pretrained
                     help='pre_trained_filename')
 parser.add_argument('--finetuned_filename', type=str, default=None, help='finetuned_filename')
 parser.add_argument('--test_max_iter', type=int, default=None, help='maximum test iteration')
-parser.add_argument('--test_with_multicrops', type=int, default=0, help='whether using multiple crops for testing.')
 parser.add_argument('--test_batch_size', type=int, default=100, help='batch size used for test or validation')
 FLAGS = parser.parse_args()
 
 
 def eval():
     with tf.variable_scope(FLAGS.resnet):
-        images, labels, num_classes = dataset_reader.build_input(FLAGS.test_batch_size,
-                                                                 'val',
-                                                                 dataset='places365',
-                                                                 color_switch=FLAGS.color_switch,
-                                                                 blur=0,
-                                                                 multicrops_for_eval=FLAGS.test_with_multicrops)
+        images, labels, num_classes = dataset_reader.build_training_input(FLAGS.test_batch_size,
+                                                                          'val',
+                                                                          dataset='places365',
+                                                                          color_switch=FLAGS.color_switch,
+                                                                          blur=0)
         model = resnet.ResNet(num_classes, None, None, None, resnet=FLAGS.resnet, mode='test',
                               float_type=tf.float32)
         logits = model.inference(images)
