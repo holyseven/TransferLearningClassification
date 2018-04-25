@@ -33,9 +33,9 @@ tf.app.flags.DEFINE_string('resnet', 'resnet_v1_101', 'resnet_v1_50, resnet_v1_1
 
 def eval():
     with tf.variable_scope(FLAGS.resnet):
-        images, labels, _ = dataset_reader.build_training_input(FLAGS.test_batch_size, 'val', dataset='imagenet',
-                                                                blur=0,
-                                                                color_switch=FLAGS.color_switch)
+        images, labels, _ = dataset_reader.build_input(FLAGS.test_batch_size, 'val', dataset='imagenet',
+                                                       blur=0,
+                                                       color_switch=FLAGS.color_switch)
         model = resnet.ResNet(FLAGS.num_classes, None, None, None, resnet=FLAGS.resnet, mode=FLAGS.mode,
                               float_type=tf.float32)
         logits = model.inference(images)
