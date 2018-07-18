@@ -342,7 +342,7 @@ class Network(object):
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
                    + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
         elif mode == 61:
-            print('Applying L2-SP-Fisher regularizatino clip(FIM) with max value', self.fisher_epsilon, '...')
+            print('Applying L2-SP-Fisher regularization clip(FIM) with max value', self.fisher_epsilon, '...')
             reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
             fim_dict = np.load(self.fisher_filename).item()
             l2_losses_existing_layers = []
@@ -359,6 +359,27 @@ class Network(object):
                     pre_trained_weights = reader.get_tensor(name)
                     fim = np.clip(fim_dict[v.name], a_min=None, a_max=self.fisher_epsilon)
                     # print fim.shape, v.get_shape()
+
+                    l2_losses_existing_layers.append(tf.reduce_sum(0.5 * fim * tf.square(v-pre_trained_weights)))
+            return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
+                   + self.wd_rate_placeholder2 * tf.add_n(l2_losses_new_layers)
+        elif mode == 62:
+            print('Applying L2-SP-Fisher regularization + fisher_epsilon,', self.fisher_epsilon, 'clipped with 0.1 ...')
+            reader = tf.train.NewCheckpointReader(self.fine_tune_filename)
+            fim_dict = np.load(self.fisher_filename).item()
+            l2_losses_existing_layers = []
+            l2_losses_new_layers = []
+            for v in tf.trainable_variables():
+                if 'weights' in v.name:
+                    print(v.name)
+                    if any(elem in v.name for elem in self.new_layers_names):
+                        print('except ', v.name)
+                        l2_losses_new_layers.append(tf.nn.l2_loss(v))
+                        continue
+
+                    name = v.name.split(':')[0]
+                    pre_trained_weights = reader.get_tensor(name) + self.fisher_epsilon
+                    fim = np.clip(fim_dict[v.name], a_min=None, a_max=0.1)
 
                     l2_losses_existing_layers.append(tf.reduce_sum(0.5 * fim * tf.square(v-pre_trained_weights)))
             return self.wd_rate_placeholder * tf.add_n(l2_losses_existing_layers) \
