@@ -11,30 +11,33 @@ import os
 from model import resnet
 import tensorflow as tf
 
-FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('test_batch_size', 10, 'batch size used for test or validation.')
-tf.app.flags.DEFINE_integer('num_classes', 1000, 'num_classes')
-tf.app.flags.DEFINE_integer('labels_offset', 0, 'num_classes')
-tf.app.flags.DEFINE_string('mode', 'val', 'train or val.')
-tf.app.flags.DEFINE_integer('server', 0, 'local machine 0 or server 1')
-tf.app.flags.DEFINE_string('pre_trained_filename', '../z_pretrained_weights/resnet_v1_101.ckpt',
-                           'Directory to keep training outputs.')
-tf.app.flags.DEFINE_string('finetuned_filename',
-                           None,
-                           'Directory to keep training outputs.')
-tf.app.flags.DEFINE_string('log_dir', '0', 'batch, fused_bn, batch_renorm or layer')
-tf.app.flags.DEFINE_float('epsilon', 0.00001, 'epsilon in bn layers.')
-tf.app.flags.DEFINE_integer('norm_only', 0, 'no beta nor gamma in fused_bn (1). Or with beta and gamma(0).')
-tf.app.flags.DEFINE_integer('color_switch', 0, 'rgb in database.')
-tf.app.flags.DEFINE_integer('top_k', 1, 'top_k precision.')
-tf.app.flags.DEFINE_integer('test_max_iter', None, 'Maximum test iteration.')
-tf.app.flags.DEFINE_string('resnet', 'resnet_v1_101', 'resnet_v1_50, resnet_v1_101, resnet_v1_152')
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--resize_image', type=int, default=0, help='resize_image (1) or respect the aspect ratio (0).')
+parser.add_argument('--test_batch_size', type=int, default=10, help='batch size used for test or validation')
+parser.add_argument('--num_classes', type=int, default=1000, help='num_classes')
+parser.add_argument('--labels_offset', type=int, default=0, help='num_classes')
+parser.add_argument('--mode', type=str, default='val', help='train or val')
+parser.add_argument('--server', type=int, default=0, help='local machine 0 or server 1')
+parser.add_argument('--pre_trained_filename', type=str, default='../z_pretrained_weights/resnet_v1_101.ckpt',
+                    help='pretrained filename')
+parser.add_argument('--finetuned_filename', type=str, default=None, help='finetuned filename')
+parser.add_argument('--log_dir', type=str, default='0', help='log dir')
+parser.add_argument('--epsilon', type=float, default=0.00001, help='epsilon in bn layers')
+parser.add_argument('--norm_only', type=int, default=0,
+                    help='no beta nor gamma in fused_bn (1). Or with beta and gamma(0).')
+parser.add_argument('--color_switch', type=int, default=0, help='rgb in database')
+parser.add_argument('--top_k', type=int, default=1, help='top_k precision')
+parser.add_argument('--test_max_iter', type=int, default=None, help='Maximum test iteration')
+parser.add_argument('--resnet', type=str, default='resnet_v1_101', help='resnet_v1_50, resnet_v1_101, resnet_v1_152')
+FLAGS = parser.parse_args()
 
 
 def eval():
     with tf.variable_scope(FLAGS.resnet):
         images, labels, _ = dataset_reader.build_input(FLAGS.test_batch_size, 'val', dataset='imagenet',
-                                                       blur=0,
+                                                       blur=0, resize_image=FLAGS.resize_image,
                                                        color_switch=FLAGS.color_switch)
         model = resnet.ResNet(FLAGS.num_classes, None, None, None, resnet=FLAGS.resnet, mode=FLAGS.mode,
                               float_type=tf.float32)
